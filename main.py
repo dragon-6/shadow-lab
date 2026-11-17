@@ -2,7 +2,7 @@ import os
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from network import message_router
+from network.message_router import message_router
 
 app = FastAPI(title="Shadow Lab Backend")
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")

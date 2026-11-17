@@ -6,9 +6,9 @@ from typing import Any, Dict, List, Optional
 from enum import Enum
 
 from game import Player 
+from .scheduler import scheduler
 from cv_module import CVModule
 from network import ws_module
-from scheduler import scheduler
 
 class GameManager:
     class GameState(Enum):
