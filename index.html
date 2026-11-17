@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SHADOW LAB</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet" />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #05060a;
+      --panel: rgba(14, 17, 26, 0.78);
+      --card: rgba(22, 26, 39, 0.72);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-hi: rgba(139, 92, 246, 0.45);
+      --accent: #8b5cf6;
+      --accent-2: #ec4899;
+      --accent-cyan: #38bdf8;
+      --glow: rgba(139, 92, 246, 0.35);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --success: #10b981;
+      --warn: #f59e0b;
+      --danger: #f43f5e;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --radius-sm: 10px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+      font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      background-color: var(--bg);
+      background-image:
+        radial-gradient(circle at 12% 18%, rgba(139, 92, 246, 0.22), transparent 42%),
+        radial-gradient(circle at 88% 82%, rgba(236, 72, 153, 0.16), transparent 45%),
+        radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 0.65), transparent 100%);
+      color: var(--text);
+      user-select: none;
+    }
+
+    .app-shell {
+      width: 100%;
+      max-width: 1360px;
+      height: 100vh;
+      margin: 0 auto;
+      padding: 16px 22px;
+      display: grid;
+      grid-template-rows: 58px 1fr;
+      gap: 16px;
+    }
+
+    /* 상단 바 */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 22px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      backdrop-filter: blur(24px);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 19px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #ffffff 30%, #c4b5fd 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .logo-mark {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      display: grid;
+      place-items: center;
+      font-size: 16px;
+      box-shadow: 0 0 18px var(--glow);
+      -webkit-text-fill-color: initial;
+    }
+
+    .badge-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 13px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge:empty {
+      display: none;
+    }
+
+    #phaseBadge {
+      color: #ddd6fe;
+      background: rgba(139, 92, 246, 0.16);
+      border-color: rgba(139, 92, 246, 0.35);
+    }
+
+    #myRoleBadge[data-role="host"] {
+      color: #fde68a;
+      background: rgba(245, 158, 11, 0.15);
+      border-color: rgba(245, 158, 11, 0.35);
+    }
+
+    #myRoleBadge[data-role="member"] {
+      color: #bae6fd;
+      background: rgba(56, 189, 248, 0.14);
+      border-color: rgba(56, 189, 248, 0.3);
+    }
+
+    #wsStatusBadge::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+
+    #wsStatusBadge[data-state="online"] {
+      color: #a7f3d0;
+    }
+    #wsStatusBadge[data-state="online"]::before {
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+    }
+
+    #wsStatusBadge[data-state="connecting"]::before {
+      background: var(--warn);
+    }
+
+    #wsStatusBadge[data-state="offline"] {
+      color: #fecdd3;
+    }
+    #wsStatusBadge[data-state="offline"]::before {
+      background: var(--danger);
+    }
+
+    /* 메인 무스크롤 레이아웃 (좌: 내 카메라 + 실시간 플레이어 목록 / 우: 스테이지) */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 310px 1fr;
+      gap: 16px;
+      height: 100%;
+      min-height: 0;
+    }
+
+    .side-dock {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 14px;
+      min-height: 0;
+    }
+
+    /* 내 카메라 카드 */
+    .cam-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      backdrop-filter: blur(24px);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .cam-card[data-streaming="true"] {
+      border-color: var(--accent-2);
+      box-shadow: 0 0 28px rgba(236, 72, 153, 0.3);
+    }
+
+    .card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+    }
+
+    .live-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+
+    .cam-card[data-streaming="true"] .live-dot {
+      background: var(--accent-2);
+      box-shadow: 0 0 10px var(--accent-2);
+      animation: blink 0.8s infinite alternate;
+    }
+
+    @keyframes blink {
+      from { opacity: 0.35; }
+      to { opacity: 1; }
+    }
+
+    .cam-box {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      background: #000;
+      border: 1px solid var(--border);
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.9);
+    }
+
+    #localVideo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+      display: block;
+    }
+
+    /* 상시 표시되는 플레이어(대기/플레이 중) 카드 */
+    .players-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 0;
+      backdrop-filter: blur(24px);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+    }
+
+    #userList {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+      min-height: 0;
+      flex: 1;
+    }
+
+    #userList li {
+      padding: 11px 14px;
+      border-radius: var(--radius-sm);
+      background: var(--card);
+      border: 1px solid var(--border);
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+
+    #userList li::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+      flex-shrink: 0;
+    }
+
+    #userList li.is-me {
+      border-color: var(--border-hi);
+      background: rgba(139, 92, 246, 0.14);
+    }
+
+    #userList li.is-host {
+      box-shadow: inset 3px 0 0 var(--warn);
+    }
+
+    #userList li.is-disconnected {
+      opacity: 0.45;
+      border-color: rgba(244, 63, 94, 0.35);
+    }
+
+    #userList li.is-disconnected::before {
+      background: var(--danger);
+      box-shadow: none;
+    }
+
+    /* 우측 메인 스테이지 공통 */
+    .stage-panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px 28px;
+      height: 100%;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 16px;
+      backdrop-filter: blur(24px);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65);
+      overflow: hidden;
+    }
+
+    .stage-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .stage-title {
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+    }
+
+    /* 폼 & 버튼 */
+    .control-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin: auto 0;
+      width: 100%;
+      max-width: 560px;
+      align-self: center;
+    }
+
+    .glass-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .box-title {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    input {
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      background: rgba(8, 10, 16, 0.85);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+    }
+
+    input:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    #nicknameInput {
+      flex: 1;
+    }
+
+    .opt-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .field input {
+      width: 100%;
+    }
+
+    button {
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 800;
+      padding: 12px 18px;
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      cursor: pointer;
+      transition: transform 0.15s, background 0.2s, box-shadow 0.2s;
+    }
+
+    button:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.15);
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .btn-cta {
+      width: 100%;
+      padding: 15px;
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      border: none;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #fff;
+      box-shadow: 0 12px 28px -6px var(--glow);
+    }
+
+    .btn-cta:hover:not(:disabled) {
+      box-shadow: 0 16px 34px -4px var(--glow);
+    }
+
+    #startHint {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      text-align: center;
+      min-height: 18px;
+    }
+
+    #startHint[data-ready="true"] {
+      color: var(--success);
+    }
+
+    /* 인게임 화면 (스크롤 없이 2x2 또는 1~4인 자동 맞춤) */
+    #screen-game {
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      gap: 12px;
+    }
+
+    .hud-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 22px;
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.18), rgba(236, 72, 153, 0.12));
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-md);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hud-left {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+    }
+
+    #roundDisplay {
+      font-size: 14px;
+      font-weight: 800;
+      color: #c4b5fd;
+      letter-spacing: 0.05em;
+    }
+
+    #topicDisplay {
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      color: #fff;
+      text-shadow: 0 0 24px var(--glow);
+    }
+
+    #countdownDisplay {
+      font-size: 24px;
+      font-weight: 900;
+      color: var(--warn);
+      font-variant-numeric: tabular-nums;
+    }
+
+    #countdownDisplay[data-urgent="true"] {
+      color: var(--danger);
+      animation: blink 0.4s infinite alternate;
+    }
+
+    .progress-track {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    #countdownProgressBar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width 0.25s linear;
+    }
+
+    #statusMessage {
+      font-size: 13px;
+      font-weight: 700;
+      color: #c4b5fd;
+      text-align: center;
+      min-height: 18px;
+    }
+
+    #statusMessage:empty {
+      display: none;
+    }
+
+    #maskedStreamList {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-auto-rows: 1fr;
+      gap: 12px;
+      height: 100%;
+      min-height: 0;
+    }
+
+    .masked-tile {
+      background: #020306;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      min-height: 0;
+      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.55);
+    }
+
+    .masked-tile.is-me {
+      border-color: var(--accent);
+      box-shadow: 0 0 20px rgba(139, 92, 246, 0.25);
+    }
+
+    .masked-tile.is-disconnected {
+      opacity: 0.45;
+      border-color: var(--danger);
+    }
+
+    .masked-tile img {
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      object-fit: contain;
+      background: radial-gradient(circle, #111522 0%, #030408 100%);
+      display: block;
+    }
+
+    .masked-label {
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 800;
+      text-align: center;
+      background: rgba(14, 17, 26, 0.92);
+      border-top: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    /* 결과 및 게임오버 */
+    .result-body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 14px;
+      flex: 1;
+      min-height: 0;
+      max-width: 620px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    #roundResultList,
+    #rankingList {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow-y: auto;
+      min-height: 0;
+    }
+
+    #roundResultList li,
+    #rankingList li {
+      padding: 14px 18px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 15px;
+      font-weight: 800;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #roundResultList li.is-top,
+    #rankingList li.rank-1 {
+      border-color: rgba(245, 158, 11, 0.55);
+      background: linear-gradient(90deg, rgba(245, 158, 11, 0.18), rgba(22, 26, 39, 0.8));
+      color: #fef08a;
+    }
+
+    #roundResultList li.is-me,
+    #rankingList li.is-me {
+      outline: 1px solid var(--accent);
+    }
+
+    #myResult {
+      font-size: 28px;
+      font-weight: 900;
+      text-align: center;
+      padding: 18px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.22), rgba(236, 72, 153, 0.22));
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #fff;
+    }
+
+    #myResult:empty {
+      display: none;
+    }
+
+    #resultStatus {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      text-align: center;
+      min-height: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="top-bar">
+      <div class="logo">
+        <span class="logo-mark">🌒</span>
+        <span>SHADOW LAB</span>
+      </div>
+      <div class="badge-row">
+        <span id="phaseBadge" class="badge">LOBBY</span>
+        <span id="wsStatusBadge" class="badge" data-state="connecting">연결 중...</span>
+      </div>
+    </header>
+
+    <main class="main-grid">
+      <!-- 좌측 고정 패널: 내 카메라 + 대기/플레이 중인 플레이어 목록 상시 표시 -->
+      <aside class="side-dock">
+        <div id="localVideoCard" class="cam-card" data-streaming="false">
+          <div class="card-top">
+            <span class="live-indicator">
+              <span class="live-dot"></span>
+              <span>MY CAM</span>
+            </span>
+            <span id="camStatusBadge"></span>
+          </div>
+          <div class="cam-box">
+            <video id="localVideo" autoplay muted playsinline></video>
+          </div>
+        </div>
+
+        <div class="players-card">
+          <div class="card-top">
+            <span>PLAYERS</span>
+            <span id="userCountBadge">0 / 4</span>
+          </div>
+          <ul id="userList"></ul>
+        </div>
+      </aside>
+
+      <!-- 1~2단계: 대기실 -->
+      <section id="screen-lobby" class="stage-panel">
+        <div class="stage-header">
+          <h2 class="stage-title">LOBBY</h2>
+        </div>
+
+        <div class="control-stack">
+          <div class="glass-box">
+            <span class="box-title">NICKNAME</span>
+            <div class="input-row">
+              <input id="nicknameInput" type="text" maxlength="16" placeholder="닉네임" />
+              <button id="nicknameSubmitBtn" type="button">확인</button>
+            </div>
+          </div>
+
+          <div class="glass-box">
+            <span class="box-title">OPTIONS</span>
+            <div class="opt-grid">
+              <label class="field">
+                <span>ROUNDS</span>
+                <input id="roundInput" type="number" min="1" max="20" />
+              </label>
+              <label class="field">
+                <span>TIME (S)</span>
+                <input id="timeInput" type="number" min="1" max="120" />
+              </label>
+              <button id="optionSubmitBtn" type="button">적용</button>
+            </div>
+          </div>
+
+          <button id="gameStartBtn" class="btn-cta" type="button">GAME START</button>
+          <p id="startHint"></p>
+        </div>
+
+        <div></div>
+      </section>
+
+      <!-- 3단계: 인게임 -->
+      <section id="screen-game" class="stage-panel" hidden>
+        <div class="hud-bar">
+          <div class="hud-left">
+            <span id="roundDisplay">ROUND 1 / 5</span>
+            <div id="topicDisplay">—</div>
+          </div>
+          <div id="countdownDisplay"></div>
+          <div class="progress-track">
+            <div id="countdownProgressBar"></div>
+          </div>
+        </div>
+
+        <p id="statusMessage"></p>
+
+        <div id="maskedStreamList"></div>
+      </section>
+
+      <!-- 3-3~3-4단계: 라운드 결과 -->
+      <section id="screen-result" class="stage-panel" hidden>
+        <div class="stage-header">
+          <h2 id="roundResultTitle" class="stage-title">RESULT</h2>
+        </div>
+        <div class="result-body">
+          <ul id="roundResultList"></ul>
+          <p id="resultStatus"></p>
+        </div>
+        <div></div>
+      </section>
+
+      <!-- 4단계: 게임 종료 -->
+      <section id="screen-gameover" class="stage-panel" hidden>
+        <div class="stage-header">
+          <h2 class="stage-title">FINAL RANKING</h2>
+        </div>
+        <div class="result-body">
+          <h3 id="myResult"></h3>
+          <ol id="rankingList"></ol>
+          <button id="playAgainBtn" class="btn-cta" type="button">PLAY AGAIN</button>
+        </div>
+        <div></div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
