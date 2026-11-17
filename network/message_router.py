@@ -85,3 +85,5 @@ class MessageRouter:
 
     async def _on_round_end_ack(self, player: Player, payload: dict):
         await game_manager.ack_round_end(player)
+
+message_router = MessageRouter()
