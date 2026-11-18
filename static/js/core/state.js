@@ -95,7 +95,7 @@ export function resetGameForReplay() {
   state.rankings = [];
 }
 
-// RECONNECT_FAIL 등으로 세션을 초기화할 때 호출 (기존 닉네임은 보존하여 재입장 시 자동 재설정 가능하도록 유지)
+// EXPIRED_SESSION / UNAUTHORIZED 등으로 세션을 초기화할 때 호출 (기존 닉네임은 보존하여 재입장 시 자동 재설정 가능하도록 유지)
 export function clearMyAuthInfo(preserveNickname = true) {
   const prevNickname = preserveNickname ? getSavedNickname() : null;
   state.myUuid = null;

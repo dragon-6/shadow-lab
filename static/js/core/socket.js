@@ -39,9 +39,10 @@ let reconnectTimer = null;
 let reconnectReqTimer = null;
 let autoReconnect = true;  // false면 연결이 끊겨도 재접속하지 않음 (게임 종료 화면 유지 시)
 let reconnectFailRetries = 0; // F5 직후 서버가 아직 이전 소켓 끊김을 감지 못했을 때 재시도 횟수
+let lockedBadgeText = null;   // 입장 거부(방 정원 초과 등) 사유 배지 문구 (onclose가 덮어쓰지 않도록 보존)
 
 // 소켓 상태 UI 배지 업데이트 (#wsStatusBadge)
-function updateConnectionBadge(statusText, stateClass) {
+export function updateConnectionBadge(statusText, stateClass) {
   const badge = document.getElementById("wsStatusBadge");
   if (!badge) return;
   badge.textContent = statusText;
@@ -107,7 +108,7 @@ export function sendReconnectRequest(uuid) {
   return sendMessage("RECONNECT_REQ", { prevUuid: targetUuid }, targetUuid);
 }
 
-// F5 직후 서버가 이전 연결의 WebSocketDisconnect를 처리하기 전에 RECONNECT_REQ가 먼저 도착해 RECONNECT_FAIL이 난 경우 재시도
+// F5 직후 서버가 이전 연결의 WebSocketDisconnect를 처리하기 전에 RECONNECT_REQ가 먼저 도착해 ERROR(EXPIRED_SESSION 등)가 난 경우 재시도
 export function retryReconnectOnFail() {
   const savedUuid = state.myUuid || getSavedUuid();
   if (!savedUuid || reconnectFailRetries >= 2) {
@@ -151,7 +152,7 @@ export function connectWebSocket(onMessage) {
   // 연결 직후 분기 (규격 5장 재접속):
   //   저장된 UUID 있음 -> RECONNECT_REQ (senderUuid, prevUuid 모두 기존 UUID)
   //   저장된 UUID 없음 -> JOIN_REQ (senderUuid는 null)
-  // 서버 응답: RECONNECT_SUCCESS(복구) / RECONNECT_FAIL(신규 입장) -> main.js에서 처리
+  // 서버 응답: RECONNECT_SUCCESS(복구) / ERROR(EXPIRED_SESSION 등 -> 신규 입장) -> main.js에서 처리
   socket.onopen = () => {
     console.log("웹소켓 연결 성공:", WS_URL);
     updateConnectionBadge("연구소 서버 연결됨", "online");
@@ -189,7 +190,7 @@ export function connectWebSocket(onMessage) {
     console.log("웹소켓 연결 종료");
     clearTimeout(reconnectReqTimer);
     updateConnectionBadge(
-      autoReconnect ? "연결 끊김 · 재접속 시도 중..." : "게임 종료됨",
+      lockedBadgeText ?? (autoReconnect ? "연결 끊김 · 재접속 시도 중..." : "게임 종료됨"),
       "offline"
     );
     scheduleReconnect();
@@ -202,8 +203,10 @@ export function connectWebSocket(onMessage) {
 }
 
 // 게임이 끝난 뒤에는 서버가 세션을 정리할 수 있으므로, 결과 화면에서 연결이 끊겨도 강제 화면 전환하지 않음
-export function disableAutoReconnect() {
+// badgeText: 입장 거부처럼 종료 사유를 배지에 계속 보여줘야 할 때 전달 (소켓이 닫혀도 유지)
+export function disableAutoReconnect(badgeText = null) {
   autoReconnect = false;
+  lockedBadgeText = badgeText;
   clearTimeout(reconnectTimer);
   clearTimeout(reconnectReqTimer);
 }
@@ -211,6 +214,7 @@ export function disableAutoReconnect() {
 // 다시 새 게임이 시작되거나 세션이 복구될 때 자동 재접속 활성화
 export function enableAutoReconnect() {
   autoReconnect = true;
+  lockedBadgeText = null;
 }
 
 // 소켓이 닫혀 있을 때 즉시 재연결 시도 (다시 하기 클릭 시 사용)

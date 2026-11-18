@@ -13,6 +13,21 @@ const MAX_ROUNDS = 20;        // 옵션 상한 (index.html 입력칸 max와 동�
 const MAX_PLAY_SECONDS = 120;
 
 let startLocked = false;
+let hintNotice = null;  // 서버 거부 사유 등 임시 안내 문구 (updateHostControls가 덮어쓰지 않도록 보존)
+let hintTimer = null;
+
+// 안내 문구(#startHint)를 ms 동안 유지 (0이면 다음 방 입장 전까지 유지)
+export function showHintNotice(message, ms = 4000) {
+  hintNotice = message;
+  clearTimeout(hintTimer);
+  if (ms > 0) {
+    hintTimer = setTimeout(() => {
+      hintNotice = null;
+      updateHostControls();
+    }, ms);
+  }
+  updateHostControls();
+}
 
 // ② [클라이언트 ➔ 서버] 닉네임 설정 요청 (SET_NICKNAME)
 export function requestSetNickname(nickname) {
@@ -226,7 +241,7 @@ export function updateHostControls() {
   const hintEl = document.getElementById("startHint");
   if (startBtn) startBtn.disabled = reason !== null;
   if (hintEl) {
-    hintEl.textContent = reason ?? "모든 실험 준비가 완료되었습니다. 실험을 시작하세요!";
-    hintEl.dataset.ready = reason === null ? "true" : "false";
+    hintEl.textContent = hintNotice ?? reason ?? "모든 실험 준비가 완료되었습니다. 실험을 시작하세요!";
+    hintEl.dataset.ready = hintNotice === null && reason === null ? "true" : "false";
   }
 }
