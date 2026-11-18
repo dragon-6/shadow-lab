@@ -5,9 +5,13 @@
 import { state, getSavedUuid, backupSessionOnUnload } from "./state.js";
 
 // ---------- 설정 ----------
-// 기본 백엔드 서버 주소 (http://가 입력되어도 자동으로 ws://로 정규화)
-const DEFAULT_BACKEND_WS = "ws://000.000.000.000:0000/ws";
+// [1. 기본 주소 동적 생성]
+// 0.0.0.0 오류를 방지하기 위해 접속 중인 주소(예: localhost:8000)를 그대로 따라갑니다.
+const DEFAULT_WS_PROTOCOL = location.protocol === "https:" ? "wss:" : "ws:";
+const DEFAULT_BACKEND_WS = `${DEFAULT_WS_PROTOCOL}//${location.host || "localhost:8000"}/ws`;
 
+// [2. 주소 형식 보정]
+// 사용자가 http:// 로 입력해도 웹소켓 규격(ws://)으로 자동 변환합니다.
 function normalizeWsUrl(url) {
   if (!url) return DEFAULT_BACKEND_WS;
   if (url.startsWith("http://")) return "ws://" + url.slice("http://".length);
@@ -15,15 +19,12 @@ function normalizeWsUrl(url) {
   return url;
 }
 
+// [3. 최종 접속 주소 결정]
+// 주소창 뒤에 ?ws=... 가 붙어있으면 그 주소를 우선 연결하고, 없으면 기본 주소로 연결합니다.
 function resolveWsUrl() {
-  // 1단계: 브라우저 현재 주소창(URL)의 쿼리스트링(? 뒤의 내용)을 파싱합니다.
   const override = new URLSearchParams(location.search).get("ws");
-
-  // 2단계: 주소창에 '?ws=...' 형태로 입력된 값이 있으면 그 값을 우선 정규화해서 사용합니다.
   if (override) return normalizeWsUrl(override);
-
-  // 3단계: 주소창에 지정된 값이 없으면 코드에 적힌 기본 주소(DEFAULT_BACKEND_WS)를 사용합니다.
-  return normalizeWsUrl(DEFAULT_BACKEND_WS);
+  return DEFAULT_BACKEND_WS;
 }
 
 const WS_URL = resolveWsUrl();

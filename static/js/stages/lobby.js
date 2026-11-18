@@ -132,25 +132,27 @@ export function handleGameOptionsUpdated(payload) {
 
 // ---------- 게임 시작 (2단계) ----------
 
-// 게임을 시작할 수 없는 이유를 반환 (시작 가능하면 null)
-// 요청 검증과 버튼 활성화가 같은 기준을 쓰도록 한곳에서 판단
+/**
+ * 게임을 시작할 수 없는 사유를 반환하는 함수 (시작 가능 상태면 null 반환)
+ * - 버튼의 활성화/비활성화(updateHostControls)와 시작 요청(requestGameStart)의 사전 검증 기준을 일치시키기 위해 사용
+ */
 function getStartBlockReason() {
+  // 1. 소켓 연결 및 인증 여부 확인: 서버로부터 UUID를 발급받기 전에는 시작 불가
   if (!state.myUuid) return "서버 연결 대기 중";
+  // 2. 권한 확인: 방장(Host)이 아닌 일반 유저는 시작 요청 권한이 없음
   if (!state.isHost) return "방장만 게임을 시작할 수 있습니다";
+  // 3. 중복 전송 방지: 시작 요청 전송 후 쿨타임(START_LOCK_MS) 동안 추가 클릭 방어
   if (startLocked) return "시작 요청 처리 중";
 
-  // 접속 중인 유저 기준으로 검증 (규격: 2~4인, 모두 닉네임 설정 완료)
-  const connected = state.users.filter((u) => u.isConnected !== false);
-  if (connected.length < MIN_PLAYERS || connected.length > MAX_PLAYERS) {
-    return `실험 인원은 ${MIN_PLAYERS}~${MAX_PLAYERS}명이어야 합니다 (현재 ${connected.length}명)`;
-  }
-  if (connected.some((u) => !u.nickname)) {
-    return "닉네임 설정이 끝나지 않은 연구원이 있습니다";
-  }
+  // 4. 인원수(MIN/MAX) 및 타 유저 준비 상태는 백엔드 검증에 위임
+  //    (서버가 단독 테스트 지원 및 NOT_READY 에러 코드로 직접 관리하므로 프론트 하드코딩 검증 제외)
+
+  // 5. 내 장치 상태 확인: 본인의 카메라가 켜져 있지 않거나 대체 모드가 아니면 시작 불가
   if (!state.webcamReady && !state.webcamFallbackMode) {
     return "내 웹캠이 준비되지 않았습니다";
   }
 
+  // 모든 프론트엔드 검증 통과: 시작 가능한 상태
   return null;
 }
 
