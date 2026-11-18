@@ -10,15 +10,18 @@ if frame is None:
 
 pre = Preprocessor()
 
-hand = pre.crop_hand(frame)
-if hand is None:
+points = pre.find_points(frame)
+if points is None:
     print("손을 못 찾음")
     sys.exit()
 
-gray = cv2.cvtColor(hand, cv2.COLOR_BGR2GRAY)
-binary = pre.to_binary(hand)
+view = frame.copy()
+for x, y in points:
+    cv2.circle(view, (x, y), 5, (0, 255, 0), -1)
+cv2.imwrite("out/points.png", view)
 
-cv2.imwrite("out/1_crop.png", hand)
-cv2.imwrite("out/2_gray.png", gray)
-cv2.imwrite("out/3_binary.png", binary)
+mask, status = pre.make_mask(frame)
+print("상태:", status)
+if mask is not None:
+    cv2.imwrite("out/mask.png", mask)
 print("저장 완료: out/ 폴더 확인")

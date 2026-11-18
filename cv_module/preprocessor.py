@@ -14,10 +14,12 @@ class Preprocessor:
             base_options=BaseOptions(model_asset_path=model_path),
             running_mode=RunningMode.IMAGE,
             num_hands=2,
+            min_hand_detection_confidence=0.3,
+            min_hand_presence_confidence=0.3,
         )
         self.landmarker = HandLandmarker.create_from_options(options)
 
-    def find_box(self, frame):
+    def find_points(self, frame):
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         rgb = np.ascontiguousarray(rgb)
         image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
@@ -25,44 +27,59 @@ class Preprocessor:
         if len(result.hand_landmarks) == 0:
             return None
         h, w = frame.shape[:2]
-        xs = []
-        ys = []
+        points = []
         for hand in result.hand_landmarks:
             for p in hand:
-                xs.append(int(p.x * w))
-                ys.append(int(p.y * h))
-        pad = 30
-        x1 = max(min(xs) - pad, 0)
-        x2 = min(max(xs) + pad, w)
-        y1 = max(min(ys) - pad, 0)
-        y2 = min(max(ys) + pad, h)
-        if x2 <= x1 or y2 <= y1:
-            return None
-        return x1, y1, x2, y2
+                x = min(max(int(p.x * w), 0), w - 1)
+                y = min(max(int(p.y * h), 0), h - 1)
+                points.append((x, y))
+        return points
 
-    def crop_hand(self, frame):
-        box = self.find_box(frame)
-        if box is None:
-            return None
-        x1, y1, x2, y2 = box
-        return frame[y1:y2, x1:x2]
-
-    def fix_light(self, gray):
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-        return clahe.apply(gray)
-
-    def to_binary(self, img):
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        gray = self.fix_light(gray)
-        gray = cv2.GaussianBlur(gray, (5, 5), 0)
-        _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    def skin_mask(self, frame, points):
+        blur = cv2.GaussianBlur(frame, (5, 5), 0)
+        ycrcb = cv2.cvtColor(blur, cv2.COLOR_BGR2YCrCb)
+        samples = np.array([ycrcb[y, x] for x, y in points])
+        center = np.median(samples, axis=0)
+        low = np.clip(center - [255, 10, 10], 0, 255).astype(np.uint8)
+        high = np.clip(center + [255, 10, 10], 0, 255).astype(np.uint8)
+        mask = cv2.inRange(ycrcb, low, high)
         kernel = np.ones((5, 5), np.uint8)
-        binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel)
-        binary = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel)
-        return binary
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+        return mask
+
+    def keep_hand(self, mask, points):
+        count, labels = cv2.connectedComponents(mask)
+        votes = {}
+        for x, y in points:
+            label = labels[y, x]
+            if label != 0:
+                votes[label] = votes.get(label, 0) + 1
+        out = np.zeros_like(mask)
+        if len(votes) == 0:
+            return out
+        best = max(votes, key=votes.get)
+        out[labels == best] = 255
+        contours, _ = cv2.findContours(out, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        cv2.drawContours(out, contours, -1, 255, thickness=cv2.FILLED)
+        return out
+
+    def make_mask(self, frame):
+        points = self.find_points(frame)
+        if points is None:
+            return None, "no_hand"
+        mask = self.skin_mask(frame, points)
+        mask = self.keep_hand(mask, points)
+        x, y, w, h = cv2.boundingRect(mask)
+        if w == 0 or h == 0:
+            return None, "invalid_mask"
+        pad = 10
+        x1 = max(x - pad, 0)
+        y1 = max(y - pad, 0)
+        x2 = min(x + w + pad, mask.shape[1])
+        y2 = min(y + h + pad, mask.shape[0])
+        return mask[y1:y2, x1:x2], "ok"
 
     def run(self, frame):
-        hand = self.crop_hand(frame)
-        if hand is None:
-            return None
-        return self.to_binary(hand)
+        mask, status = self.make_mask(frame)
+        return mask
