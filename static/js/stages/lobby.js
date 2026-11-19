@@ -1,23 +1,63 @@
 // ============================================================
-// lobby.js - 대기실 로직 (닉네임, 유저 목록, 게임 옵션, 게임 시작)
+// lobby.js - 대기실 로직 (닉네임/옵션 조건 검증, 미적용 강조, 임팩트 알림창)
 // ============================================================
 import { state, setMyAuthInfo, setMyNickname } from "../core/state.js";
 import { sendMessage } from "../core/socket.js";
 import { syncMaskedTiles } from "../media/masked.js";
 
-// 게임 시작 가능 인원 (규격: 2~4인 / 혼자 테스트할 때는 MIN_PLAYERS를 1로)
-const MIN_PLAYERS = 2;
 const MAX_PLAYERS = 4;
-const START_LOCK_MS = 2000; // 시작 요청 후 중복 클릭 방지 시간
-const MAX_ROUNDS = 20;        // 옵션 상한 (index.html 입력칸 max와 동일)
+const START_LOCK_MS = 2000;
+const MIN_NICK_LEN = 2;
+const MAX_NICK_LEN = 12;
+const MIN_ROUNDS = 1;
+const MAX_ROUNDS = 20;
+const MIN_PLAY_SECONDS = 1;
 const MAX_PLAY_SECONDS = 120;
 
 let startLocked = false;
-let hintNotice = null;  // 서버 거부 사유 등 임시 안내 문구 (updateHostControls가 덮어쓰지 않도록 보존)
+let hintNotice = null;
 let hintTimer = null;
+let pendingNickToast = false;
+let pendingOptionToast = false;
+let hasReceivedInitialOptions = false;
+let lastRangeAlertAt = 0;
 
-// 안내 문구(#startHint)를 ms 동안 유지 (0이면 다음 방 입장 전까지 유지)
-export function showHintNotice(message, ms = 4000) {
+/**
+ * 화면 상단 중앙에 강력한 임팩트 토스트 알림창을 표시
+ */
+export function showImpactToast(message, type = "info", durationMs = 2800) {
+  let container = document.getElementById("impactToastContainer");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "impactToastContainer";
+    document.body.appendChild(container);
+  }
+
+  const icons = {
+    success: "✅",
+    error: "🚨",
+    warn: "⚡",
+    info: "🔔",
+  };
+
+  while (container.children.length >= 2) {
+    container.firstElementChild.remove();
+  }
+
+  const toast = document.createElement("div");
+  toast.className = "impact-toast";
+  toast.dataset.type = type;
+  toast.textContent = `${icons[type] || "🔔"} ${message}`;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add("is-leaving");
+    setTimeout(() => toast.remove(), 220);
+  }, durationMs);
+}
+
+// 안내 문구(#startHint) 표시 + 필요 시 상단 임팩트 토스트 동시 출력
+export function showHintNotice(message, ms = 4000, toastType = null) {
   hintNotice = message;
   clearTimeout(hintTimer);
   if (ms > 0) {
@@ -27,28 +67,77 @@ export function showHintNotice(message, ms = 4000) {
     }, ms);
   }
   updateHostControls();
+
+  if (toastType && message) {
+    showImpactToast(message, toastType);
+  }
 }
 
-// ② [클라이언트 ➔ 서버] 닉네임 설정 요청 (SET_NICKNAME)
-export function requestSetNickname(nickname) {
+// ② [클라이언트 ➔ 서버] 닉네임 설정 요청 (자동 보정 없이 조건 위반 시 즉시 경고 알림창)
+export function requestSetNickname(rawNickname) {
+  const nickInput = document.getElementById("nicknameInput");
+
   if (!state.myUuid) {
-    console.error("아직 UUID를 발급받지 못했습니다. (CONNECTED 대기 중)");
-    return;
+    showImpactToast("서버 연결 대기 중입니다. 잠시 후 다시 시도해주세요.", "error");
+    return false;
   }
 
-  const trimmed = nickname ? nickname.trim() : "";
-  if (!trimmed) {
-    console.warn("유효한 닉네임을 입력해주세요.");
-    return;
+  const value = typeof rawNickname === "string" ? rawNickname : "";
+
+  // 1. 빈 값 체크
+  if (!value || value.trim().length === 0) {
+    if (nickInput) nickInput.dataset.invalid = "true";
+    showImpactToast("닉네임을 입력해주세요! (공백만 입력할 수 없습니다)", "error");
+    return false;
   }
 
-  // 전송에 성공했을 때만 상태에 반영
-  if (sendMessage("SET_NICKNAME", { nickname: trimmed })) {
-    setMyNickname(trimmed);
+  // 2. 공백 포함 여부 체크 (자동 제거하지 않고 경고)
+  if (/\s/.test(value)) {
+    if (nickInput) nickInput.dataset.invalid = "true";
+    showImpactToast("닉네임에는 띄어쓰기(공백)를 포함할 수 없습니다!", "error");
+    return false;
+  }
+
+  // 3. 길이 조건 체크 (2~12자)
+  if (value.length < MIN_NICK_LEN || value.length > MAX_NICK_LEN) {
+    if (nickInput) nickInput.dataset.invalid = "true";
+    showImpactToast(
+      `닉네임은 ${MIN_NICK_LEN}~${MAX_NICK_LEN}자 사이여야 합니다! (현재 ${value.length}자)`,
+      "error",
+    );
+    return false;
+  }
+
+  // 4. 특수문자 제한 체크 (한글, 영문, 숫자, _, - 만 허용)
+  if (!/^[가-힣a-zA-Z0-9_-]+$/.test(value)) {
+    if (nickInput) nickInput.dataset.invalid = "true";
+    showImpactToast("닉네임에는 특수문자나 초성/모음 단독 문자를 사용할 수 없습니다!", "error");
+    return false;
+  }
+
+  // 5. 방 안의 다른 유저와 중복 닉네임인지 체크
+  const duplicate = state.users.some(
+    (u) => u.uuid !== state.myUuid && u.nickname && u.nickname === value,
+  );
+  if (duplicate) {
+    if (nickInput) nickInput.dataset.invalid = "true";
+    showImpactToast(`이미 사용 중인 닉네임입니다: [${value}]`, "error");
+    return false;
+  }
+
+  if (nickInput) delete nickInput.dataset.invalid;
+
+  if (sendMessage("SET_NICKNAME", { nickname: value })) {
+    setMyNickname(value);
+    pendingNickToast = true;
+    return true;
+  } else {
+    showImpactToast("서버와 연결되어 있지 않아 닉네임을 설정할 수 없습니다.", "error");
+    return false;
   }
 }
 
-// ③ [서버 ➔ 전체] 방 안의 유저 목록 동기화 (ROOM_USERS_UPDATE 등)
+// ③ [서버 ➔ 전체] 방 안의 유저 목록 동기화
 export function handleRoomUsersUpdate(payload) {
   const usersList = payload?.users ?? payload?.roomUsers ?? payload?.userList;
   if (!Array.isArray(usersList)) {
@@ -58,7 +147,6 @@ export function handleRoomUsersUpdate(payload) {
 
   state.users = usersList;
 
-  // 서버 기준 내 방장 여부 및 닉네임 동기화 (방장 위임 및 새로고침 재접속 대비)
   const me = state.users.find((u) => u.uuid === state.myUuid);
   if (me) {
     if (typeof me.isHost === "boolean") {
@@ -67,57 +155,109 @@ export function handleRoomUsersUpdate(payload) {
     if (me.nickname) {
       setMyNickname(me.nickname);
       const nickInput = document.getElementById("nicknameInput");
-      if (nickInput && nickInput.value !== me.nickname) {
+      if (nickInput && document.activeElement !== nickInput) {
         nickInput.value = me.nickname;
+      }
+      if (pendingNickToast) {
+        pendingNickToast = false;
+        showImpactToast(`닉네임 [${me.nickname}] 설정 완료!`, "success");
       }
     }
   }
 
-  console.log("[유저 목록 동기화 완료]:", state.users);
   renderRoomUsers();
-  updateHostControls(); // 방장 여부 / 인원 변화에 따라 컨트롤 갱신
-  syncMaskedTiles(); // 게임 중이면 접속 상태 변화를 영상 타일 라벨에 반영
+  updateHostControls();
+  syncMaskedTiles();
 }
 
-// [방장 ➔ 서버] 게임 옵션 변경 요청 (UPDATE_GAME_OPTIONS)
-export function requestUpdateGameOptions(totalRounds, playTimeSeconds) {
+// [방장 ➔ 서버] 게임 옵션 변경 요청 (자동 보정 제거 -> 범위 밖이면 경고 알림창 출력 후 거부)
+export function requestUpdateGameOptions(rawRounds, rawSeconds) {
   if (!state.myUuid) {
-    console.error("아직 UUID를 발급받지 못했습니다.");
-    return;
+    showImpactToast("서버 연결 대기 중입니다.", "error");
+    return false;
   }
 
-  // 방장이 아니면 전송하지 않고 입력칸을 원래 값으로 복구
   if (!state.isHost) {
-    console.warn("방장만 게임 옵션을 변경할 수 있습니다.");
+    showImpactToast("방장만 게임 옵션을 변경할 수 있습니다!", "error");
     renderGameOptions();
-    return;
+    return false;
   }
 
-  // 정수만 허용 (빈 입력은 NaN -> JSON에서 null로 바뀌어 서버 오류 유발)
-  if (!Number.isInteger(totalRounds) || !Number.isInteger(playTimeSeconds)) {
-    console.warn("라운드 수와 구현 시간은 정수여야 합니다.");
-    renderGameOptions();
-    return;
-  }
-
-  // 직접 타이핑하면 HTML min/max가 적용되지 않으므로 범위(1~상한)로 보정해서 전송
-  const rounds = Math.min(Math.max(totalRounds, 1), MAX_ROUNDS);
-  const seconds = Math.min(Math.max(playTimeSeconds, 1), MAX_PLAY_SECONDS);
   const roundEl = document.getElementById("roundInput");
   const timeEl = document.getElementById("timeInput");
-  if (roundEl) roundEl.value = rounds;
-  if (timeEl) timeEl.value = seconds;
+  const roundStr = roundEl ? roundEl.value.trim() : String(rawRounds ?? "");
+  const timeStr = timeEl ? timeEl.value.trim() : String(rawSeconds ?? "");
 
-  sendMessage("UPDATE_GAME_OPTIONS", { totalRounds: rounds, playTimeSeconds: seconds });
+  const totalRounds = Number(roundStr);
+  const playTimeSeconds = Number(timeStr);
+
+  // 1. 정수 여부 확인
+  if (!roundStr || !Number.isInteger(totalRounds)) {
+    if (roundEl) roundEl.dataset.invalid = "true";
+    showImpactToast("라운드 수는 정수로 입력해주세요! (1~20)", "error");
+    return false;
+  }
+
+  if (!timeStr || !Number.isInteger(playTimeSeconds)) {
+    if (timeEl) timeEl.dataset.invalid = "true";
+    showImpactToast("제한 시간은 정수로 입력해주세요! (1~120초)", "error");
+    return false;
+  }
+
+  // 2. 라운드 조건 범위(1~20) 확인 - 자동 보정하지 않고 즉시 경고!
+  if (totalRounds < MIN_ROUNDS || totalRounds > MAX_ROUNDS) {
+    if (roundEl) roundEl.dataset.invalid = "true";
+    showImpactToast(
+      `라운드 수는 ${MIN_ROUNDS}~${MAX_ROUNDS} 사이로 설정해야 합니다! (입력값: ${totalRounds})`,
+      "error",
+    );
+    return false;
+  }
+
+  // 3. 제한 시간 조건 범위(1~120) 확인 - 자동 보정하지 않고 즉시 경고!
+  if (playTimeSeconds < MIN_PLAY_SECONDS || playTimeSeconds > MAX_PLAY_SECONDS) {
+    if (timeEl) timeEl.dataset.invalid = "true";
+    showImpactToast(
+      `제한 시간은 ${MIN_PLAY_SECONDS}~${MAX_PLAY_SECONDS}초 사이로 설정해야 합니다! (입력값: ${playTimeSeconds}초)`,
+      "error",
+    );
+    return false;
+  }
+
+  if (roundEl) delete roundEl.dataset.invalid;
+  if (timeEl) delete timeEl.dataset.invalid;
+
+  // 이미 적용된 서버 옵션과 같을 때
+  if (
+    totalRounds === state.gameOptions.totalRounds &&
+    playTimeSeconds === state.gameOptions.playTimeSeconds
+  ) {
+    syncOptionDirtyState(false);
+    showImpactToast(
+      `현재 적용된 옵션(${totalRounds}라운드 · ${playTimeSeconds}초)과 동일합니다.`,
+      "info",
+    );
+    return false;
+  }
+
+  if (sendMessage("UPDATE_GAME_OPTIONS", { totalRounds, playTimeSeconds })) {
+    pendingOptionToast = true;
+    return true;
+  } else {
+    showImpactToast("서버 연결이 끊겨 옵션 변경에 실패했습니다.", "error");
+    return false;
+  }
 }
 
 // [서버 ➔ 전체] 게임 옵션 변경 동기화 (GAME_OPTIONS_UPDATED)
-// RECONNECT_SUCCESS(totalRounds만 존재)도 재사용하므로 있는 값만 반영
-export function handleGameOptionsUpdated(payload) {
+export function handleGameOptionsUpdated(payload, isInitialSync = false) {
   if (!payload) return;
 
   const totalRounds = payload.totalRounds ?? payload.gameOptions?.totalRounds;
   const playTimeSeconds = payload.playTimeSeconds ?? payload.gameOptions?.playTimeSeconds;
+
+  const prevRounds = state.gameOptions.totalRounds;
+  const prevSeconds = state.gameOptions.playTimeSeconds;
 
   if (Number.isInteger(totalRounds)) {
     state.gameOptions.totalRounds = totalRounds;
@@ -126,47 +266,150 @@ export function handleGameOptionsUpdated(payload) {
     state.gameOptions.playTimeSeconds = playTimeSeconds;
   }
 
-  console.log("[게임 옵션 동기화 완료]:", state.gameOptions);
   renderGameOptions();
+
+  if (isInitialSync) {
+    hasReceivedInitialOptions = true;
+    return;
+  }
+
+  const changed =
+    prevRounds !== state.gameOptions.totalRounds ||
+    prevSeconds !== state.gameOptions.playTimeSeconds;
+
+  if (pendingOptionToast) {
+    pendingOptionToast = false;
+    showImpactToast(
+      `게임 옵션 적용 완료! (${state.gameOptions.totalRounds}라운드 · ${state.gameOptions.playTimeSeconds}초)`,
+      "success",
+    );
+  } else if (hasReceivedInitialOptions && changed) {
+    showImpactToast(
+      `방장이 게임 옵션을 변경했습니다! (${state.gameOptions.totalRounds}라운드 · ${state.gameOptions.playTimeSeconds}초)`,
+      "warn",
+    );
+  }
+  hasReceivedInitialOptions = true;
 }
 
-// ---------- 게임 시작 (2단계) ----------
+/**
+ * 방장이 옵션 숫자를 바꿨을 때:
+ * 1) 조건 범위(라운드 1~20, 시간 1~120)를 벗어나면 빨간 경고(data-invalid) + 알림창 표시
+ * 2) 아직 '적용' 버튼을 누르지 않았으면 노란 강조(data-dirty="true") + '적용 필요!' 버튼 활성화
+ */
+export function syncOptionDirtyState(showToastOnInvalid = true) {
+  const roundEl = document.getElementById("roundInput");
+  const timeEl = document.getElementById("timeInput");
+  const btnEl = document.getElementById("optionSubmitBtn");
+  if (!roundEl || !timeEl) return;
+
+  if (!state.isHost) {
+    delete roundEl.dataset.dirty;
+    delete timeEl.dataset.dirty;
+    delete roundEl.dataset.invalid;
+    delete timeEl.dataset.invalid;
+    if (btnEl) {
+      delete btnEl.dataset.dirty;
+      btnEl.textContent = "적용";
+    }
+    return;
+  }
+
+  const rStr = roundEl.value.trim();
+  const tStr = timeEl.value.trim();
+  const rVal = Number(rStr);
+  const tVal = Number(tStr);
+
+  const roundInvalid =
+    !rStr || !Number.isInteger(rVal) || rVal < MIN_ROUNDS || rVal > MAX_ROUNDS;
+  const timeInvalid =
+    !tStr || !Number.isInteger(tVal) || tVal < MIN_PLAY_SECONDS || tVal > MAX_PLAY_SECONDS;
+
+  if (roundInvalid) {
+    roundEl.dataset.invalid = "true";
+    delete roundEl.dataset.dirty;
+  } else {
+    delete roundEl.dataset.invalid;
+  }
+
+  if (timeInvalid) {
+    timeEl.dataset.invalid = "true";
+    delete timeEl.dataset.dirty;
+  } else {
+    delete timeEl.dataset.invalid;
+  }
+
+  // 조건 밖 숫자를 입력했을 때 즉시 경고 토스트 출력 (도배 방지를 위해 0.6초 쿨타임)
+  const now = Date.now();
+  if (showToastOnInvalid && (roundInvalid || timeInvalid) && now - lastRangeAlertAt > 600) {
+    lastRangeAlertAt = now;
+    if (roundInvalid) {
+      showImpactToast(`라운드는 ${MIN_ROUNDS}~${MAX_ROUNDS} 사이만 가능합니다!`, "error");
+    } else if (timeInvalid) {
+      showImpactToast(`제한 시간은 ${MIN_PLAY_SECONDS}~${MAX_PLAY_SECONDS}초 사이만 가능합니다!`, "error");
+    }
+  }
+
+  const roundDirty = !roundInvalid && rVal !== state.gameOptions.totalRounds;
+  const timeDirty = !timeInvalid && tVal !== state.gameOptions.playTimeSeconds;
+  const anyDirty = roundDirty || timeDirty || roundInvalid || timeInvalid;
+
+  if (roundDirty) roundEl.dataset.dirty = "true";
+  else delete roundEl.dataset.dirty;
+
+  if (timeDirty) timeEl.dataset.dirty = "true";
+  else delete timeEl.dataset.dirty;
+
+  if (btnEl) {
+    if (anyDirty) {
+      btnEl.dataset.dirty = "true";
+      btnEl.textContent = "적용 필요!";
+    } else {
+      delete btnEl.dataset.dirty;
+      btnEl.textContent = "적용";
+    }
+  }
+}
 
 /**
  * 게임을 시작할 수 없는 사유를 반환하는 함수 (시작 가능 상태면 null 반환)
- * - 버튼의 활성화/비활성화(updateHostControls)와 시작 요청(requestGameStart)의 사전 검증 기준을 일치시키기 위해 사용
  */
 function getStartBlockReason() {
-  // 1. 소켓 연결 및 인증 여부 확인: 서버로부터 UUID를 발급받기 전에는 시작 불가
   if (!state.myUuid) return "서버 연결 대기 중";
-  // 2. 권한 확인: 방장(Host)이 아닌 일반 유저는 시작 요청 권한이 없음
   if (!state.isHost) return "방장만 게임을 시작할 수 있습니다";
-  // 3. 중복 전송 방지: 시작 요청 전송 후 쿨타임(START_LOCK_MS) 동안 추가 클릭 방어
   if (startLocked) return "시작 요청 처리 중";
-
-  // 4. 인원수(MIN/MAX) 및 타 유저 준비 상태는 백엔드 검증에 위임
-  //    (서버가 단독 테스트 지원 및 NOT_READY 에러 코드로 직접 관리하므로 프론트 하드코딩 검증 제외)
-
-  // 5. 내 장치 상태 확인: 본인의 카메라가 켜져 있지 않거나 대체 모드가 아니면 시작 불가
   if (!state.webcamReady && !state.webcamFallbackMode) {
     return "내 웹캠이 준비되지 않았습니다";
   }
-
-  // 모든 프론트엔드 검증 통과: 시작 가능한 상태
   return null;
 }
 
-// [방장 ➔ 서버] 게임 시작 요청 (GAME_START_REQ) - 빈 payload
+// [방장 ➔ 서버] 게임 시작 요청 (GAME_START_REQ)
 export function requestGameStart() {
   const reason = getStartBlockReason();
   if (reason) {
-    console.warn(`게임을 시작할 수 없습니다: ${reason}`);
+    showImpactToast(reason, "error");
+    return false;
+  }
+
+  const roundEl = document.getElementById("roundInput");
+  const timeEl = document.getElementById("timeInput");
+
+  if (roundEl?.dataset.invalid === "true" || timeEl?.dataset.invalid === "true") {
+    showImpactToast("옵션 값이 허용 범위를 벗어났습니다! 올바른 값으로 적용해주세요.", "error");
+    return false;
+  }
+
+  if (roundEl?.dataset.dirty === "true" || timeEl?.dataset.dirty === "true") {
+    showImpactToast(
+      "변경한 옵션이 아직 적용되지 않았습니다! 먼저 [적용 필요!] 버튼을 눌러주세요.",
+      "warn",
+    );
     return false;
   }
 
   if (!sendMessage("GAME_START_REQ", {})) return false;
 
-  // 중복 전송 방지: 잠시 버튼 잠금
   startLocked = true;
   updateHostControls();
   setTimeout(() => {
@@ -176,9 +419,7 @@ export function requestGameStart() {
   return true;
 }
 
-// ---------- DOM 렌더링 (해당 ID 요소가 HTML에 있을 때만 동작) ----------
-
-// 유저 목록 (#userList)
+// 유저 목록 렌더링
 export function renderRoomUsers() {
   const listEl = document.getElementById("userList");
   if (!listEl) return;
@@ -205,24 +446,24 @@ export function renderRoomUsers() {
   }
 }
 
-// 옵션 입력칸 (#roundInput, #timeInput)을 현재 상태 값으로 표시
+// 옵션 입력칸을 현재 서버 적용 값으로 표시하고 미적용 강조 해제
 export function renderGameOptions() {
   const roundEl = document.getElementById("roundInput");
   const timeEl = document.getElementById("timeInput");
   if (roundEl) roundEl.value = state.gameOptions.totalRounds;
   if (timeEl) timeEl.value = state.gameOptions.playTimeSeconds;
+  syncOptionDirtyState(false);
 }
 
 // 방장 전용 컨트롤 활성화 상태 갱신
-// 상태가 바뀌는 시점(유저 목록, 웹캠 준비, 방장 변경 등)마다 호출
 export function updateHostControls() {
-  // 옵션 입력칸/버튼: 방장일 때만
   ["roundInput", "timeInput", "optionSubmitBtn"].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.disabled = !state.isHost;
   });
 
-  // 내 역할 배지 표시 (#myRoleBadge)
+  syncOptionDirtyState(false);
+
   const roleEl = document.getElementById("myRoleBadge");
   if (roleEl) {
     if (!state.myUuid) {
@@ -237,13 +478,13 @@ export function updateHostControls() {
     }
   }
 
-  // 시작 버튼: 시작 조건을 모두 만족할 때만 활성화, 막힌 이유는 #startHint에 표시
   const reason = getStartBlockReason();
   const startBtn = document.getElementById("gameStartBtn");
   const hintEl = document.getElementById("startHint");
   if (startBtn) startBtn.disabled = reason !== null;
   if (hintEl) {
-    hintEl.textContent = hintNotice ?? reason ?? "모든 실험 준비가 완료되었습니다. 실험을 시작하세요!";
+    hintEl.textContent =
+      hintNotice ?? reason ?? "모든 실험 준비가 완료되었습니다. 실험을 시작하세요!";
     hintEl.dataset.ready = hintNotice === null && reason === null ? "true" : "false";
   }
 }
