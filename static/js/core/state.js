@@ -40,6 +40,7 @@ export const state = {
   roundPhase: "WAITING", // WAITING | TOPIC_SHOW | STREAMING | RESULT
   currentRound: 0,
   topic: "",
+  topicFrameImageBase64: null, // START_STREAMING으로 수신한 제시어 가이드 프레임 이미지
 
   // 점수
   roundScores: {},    // 이번 라운드 점수 { uuid: 점수 }
@@ -89,6 +90,7 @@ export function resetGameForReplay() {
   state.roundPhase = "WAITING";
   state.currentRound = 0;
   state.topic = "";
+  state.topicFrameImageBase64 = null;
   state.roundScores = {};
   state.totalScores = {};
   state.lastScoredRound = 0;
@@ -108,6 +110,7 @@ export function clearMyAuthInfo(preserveNickname = true) {
   state.roundPhase = "WAITING";
   state.currentRound = 0;
   state.topic = "";
+  state.topicFrameImageBase64 = null;
   state.roundScores = {};
   state.totalScores = {};
   state.lastScoredRound = 0;

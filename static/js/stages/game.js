@@ -1,18 +1,44 @@
 // ============================================================
 // game.js - 3-1 라운드 시작 / 구현 시작 (ROUND_START, START_STREAMING)
 // ============================================================
-import { state } from "../core/state.js";
-import { showScreen, setText } from "./screens.js";
-import { DEFAULT_WIDTH, DEFAULT_HEIGHT } from "../media/webcam.js";
+<<<<<<< HEAD
+import { state } from "../core/state.js?v=7";
+import { showScreen, setText } from "./screens.js?v=7";
+import { DEFAULT_WIDTH, DEFAULT_HEIGHT } from "../media/webcam.js?v=7";
+=======
+<<<<<<< HEAD
+import { state } from "../core/state.js?v=7";
+import { showScreen, setText } from "./screens.js?v=7";
+import { DEFAULT_WIDTH, DEFAULT_HEIGHT } from "../media/webcam.js?v=7";
+=======
+import { state } from "../core/state.js?v=6";
+import { showScreen, setText } from "./screens.js?v=6";
+import { DEFAULT_WIDTH, DEFAULT_HEIGHT } from "../media/webcam.js?v=6";
+>>>>>>> da122f35b6280cf0ebd1721cbeedc983280daf6b
+>>>>>>> a1b9681b36005b68743e0e845402071d999e6be6
 import {
   beginStreaming,
   stopStreaming,
   startCountdownUI,
   DEFAULT_PLAY_SECONDS,
   DEFAULT_FPS,
-} from "../media/streaming.js";
-import { resetMaskedTiles, syncMaskedTiles } from "../media/masked.js";
-import { cancelRoundEndAck } from "./result.js";
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> a1b9681b36005b68743e0e845402071d999e6be6
+} from "../media/streaming.js?v=7";
+import { resetMaskedTiles, syncMaskedTiles, setTopicFrameImage } from "../media/masked.js?v=7";
+import { cancelRoundEndAck } from "./result.js?v=7";
+import { renderRoomUsers } from "./lobby.js?v=7";
+<<<<<<< HEAD
+=======
+=======
+} from "../media/streaming.js?v=6";
+import { resetMaskedTiles, syncMaskedTiles } from "../media/masked.js?v=6";
+import { cancelRoundEndAck } from "./result.js?v=6";
+import { renderRoomUsers } from "./lobby.js?v=6";
+>>>>>>> da122f35b6280cf0ebd1721cbeedc983280daf6b
+>>>>>>> a1b9681b36005b68743e0e845402071d999e6be6
 
 export const PREPARE_COUNTDOWN_SEC = 3; // 준비 카운트다운 (UI 표시용, 실제 시작은 START_STREAMING 기준)
 
@@ -40,7 +66,9 @@ export function handleRoundStart(payload) {
   if (Number.isInteger(currentRound)) state.currentRound = currentRound;
   if (Number.isInteger(totalRounds)) state.gameOptions.totalRounds = totalRounds;
   state.topic = topic ?? "";
+  state.topicFrameImageBase64 = null;
   state.roundScores = {};
+  renderRoomUsers(); // 게임 시작(IN_GAME) 전환 직후 플레이어 목록에 0점부터 실시간 점수 표시
 
   console.log(
     `[라운드 시작] ${state.currentRound}/${state.gameOptions.totalRounds} - 제시어: ${state.topic}`
@@ -54,7 +82,7 @@ export function handleRoundStart(payload) {
 }
 
 // 3-1-1. [서버 ➔ 전체] 구현 시작 및 영상 전송 사양 전달 (START_STREAMING)
-// payload: { currentRound, playTimeSeconds, targetFps, width, height }
+// payload: { currentRound, playTimeSeconds, targetFps, width, height, topicFrameImageBase64 }
 // 수신 즉시 SEND_FRAME 송신 시작
 export function handleStartStreaming(payload) {
   if (!payload) return;
@@ -78,6 +106,7 @@ export function handleStartStreaming(payload) {
 
   showScreen("game");
   setText("statusMessage", "실시간 그림자 마스킹 측정 중...");
+  setTopicFrameImage(payload.topicFrameImageBase64 ?? null);
   syncMaskedTiles();
   renderRoundInfo();
 

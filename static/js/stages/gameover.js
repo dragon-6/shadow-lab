@@ -1,14 +1,42 @@
 // ============================================================
 // gameover.js - 4. 게임 종료 단계 (GAME_OVER): 최종 순위 / 승리 표시
 // ============================================================
-import { state, nicknameOf, resetGameForReplay } from "../core/state.js";
-import { disableAutoReconnect, ensureConnected } from "../core/socket.js";
-import { stopStreaming } from "../media/streaming.js";
-import { resetMaskedTiles } from "../media/masked.js";
-import { handleCheckWebcamReq } from "../media/webcam.js";
-import { renderRoomUsers, renderGameOptions, updateHostControls, requestSetNickname } from "./lobby.js";
-import { cancelRoundEndAck } from "./result.js";
-import { showScreen, setText, formatScore } from "./screens.js";
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> a1b9681b36005b68743e0e845402071d999e6be6
+import { state, nicknameOf, resetGameForReplay } from "../core/state.js?v=7";
+import { disableAutoReconnect, ensureConnected } from "../core/socket.js?v=7";
+import { stopStreaming } from "../media/streaming.js?v=7";
+import { resetMaskedTiles } from "../media/masked.js?v=7";
+import { handleCheckWebcamReq } from "../media/webcam.js?v=7";
+import { renderRoomUsers, renderGameOptions, updateHostControls, requestSetNickname } from "./lobby.js?v=7";
+import { cancelRoundEndAck } from "./result.js?v=7";
+import { showScreen, setText, formatScore } from "./screens.js?v=7";
+<<<<<<< HEAD
+=======
+=======
+import { state, nicknameOf, resetGameForReplay } from "../core/state.js?v=6";
+import { disableAutoReconnect, ensureConnected } from "../core/socket.js?v=6";
+import { stopStreaming } from "../media/streaming.js?v=6";
+import { resetMaskedTiles } from "../media/masked.js?v=6";
+import { handleCheckWebcamReq } from "../media/webcam.js?v=6";
+import { renderRoomUsers, renderGameOptions, updateHostControls, requestSetNickname } from "./lobby.js?v=6";
+import { cancelRoundEndAck } from "./result.js?v=6";
+import { showScreen, setText, formatScore } from "./screens.js?v=6";
+>>>>>>> da122f35b6280cf0ebd1721cbeedc983280daf6b
+>>>>>>> a1b9681b36005b68743e0e845402071d999e6be6
+
+const RANK_TITLES = {
+  1: "수석 그림자 연구원",
+  2: "차석 그림자 연구원",
+  3: "그냥 그림자 연구원",
+  4: "실험체",
+};
+
+function getRankTitle(rank) {
+  return RANK_TITLES[rank] || "실험체";
+}
 
 // 4. [서버 ➔ 전체] 게임 최종 결과 (GAME_OVER)
 // payload: { finalScores: { uuid: 점수 }, rankings: [{ rank, uuid, nickname, score }] }
@@ -16,7 +44,20 @@ export function handleGameOver(payload) {
   if (!payload) return;
 
   const hasRankings = Array.isArray(payload.rankings) && payload.rankings.length > 0;
-  showGameOver(hasRankings ? payload.rankings : buildRankings(payload.finalScores ?? {}));
+  const rankings = hasRankings ? payload.rankings : buildRankings(payload.finalScores ?? {});
+
+  // 최종 점수를 누적 점수 상태에도 동기화하여 좌측 플레이어 목록 점수 갱신
+  if (payload.finalScores && typeof payload.finalScores === "object") {
+    for (const [uuid, score] of Object.entries(payload.finalScores)) {
+      state.totalScores[uuid] = Number(score) || 0;
+    }
+  } else {
+    rankings.forEach((r) => {
+      if (r.uuid) state.totalScores[r.uuid] = Number(r.score) || 0;
+    });
+  }
+
+  showGameOver(rankings);
 }
 
 // 재접속 시 이미 끝난 게임: 누적 점수로 순위를 직접 계산해 표시
@@ -65,6 +106,7 @@ function showGameOver(rankings) {
   state.gameState = "GAME_OVER";
   state.rankings = rankings;
 
+  renderRoomUsers();
   renderRankings();
   showScreen("gameover");
 }
@@ -97,15 +139,38 @@ function renderRankings() {
     listEl.innerHTML = "";
     state.rankings.forEach((r) => {
       const me = r.uuid === state.myUuid ? " (나)" : "";
+      const title = getRankTitle(r.rank);
       const li = document.createElement("li");
       li.className = `ranking-item rank-${r.rank}`;
       if (r.uuid === state.myUuid) li.classList.add("is-me");
-      li.textContent = `${r.rank}위  ${r.nickname || nicknameOf(r.uuid)}${me} — ${formatScore(r.score)}점`;
+
+      const leftSpan = document.createElement("span");
+      leftSpan.className = "ranking-left";
+
+      const nameSpan = document.createElement("span");
+      nameSpan.textContent = `${r.rank}위  ${r.nickname || nicknameOf(r.uuid)}${me}`;
+
+      const titleBadge = document.createElement("span");
+      titleBadge.className = "ranking-title-badge";
+      titleBadge.textContent = title;
+
+      leftSpan.append(nameSpan, titleBadge);
+
+      const scoreSpan = document.createElement("span");
+      scoreSpan.className = "ranking-score";
+      scoreSpan.textContent = `${formatScore(r.score)}점`;
+
+      li.append(leftSpan, scoreSpan);
       listEl.appendChild(li);
     });
   }
 
   const mine = state.rankings.find((r) => r.uuid === state.myUuid);
-  if (!mine) setText("myResult", "");
-  else setText("myResult", mine.rank === 1 ? "🏆 최종 우승! 수석 그림자 마스터" : `최종 순위 ${mine.rank}위`);
+  if (!mine) {
+    setText("myResult", "");
+  } else {
+    const myTitle = getRankTitle(mine.rank);
+    const prefix = mine.rank === 1 ? "👑 " : "";
+    setText("myResult", `${prefix}${mine.rank}위 · ${myTitle}`);
+  }
 }
