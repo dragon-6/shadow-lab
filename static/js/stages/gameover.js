@@ -1,14 +1,14 @@
 // ============================================================
 // gameover.js - 4. 게임 종료 단계 (GAME_OVER): 최종 순위 / 승리 표시
 // ============================================================
-import { state, nicknameOf, resetGameForReplay } from "../core/state.js?v=7";
-import { disableAutoReconnect, ensureConnected } from "../core/socket.js?v=7";
-import { stopStreaming } from "../media/streaming.js?v=7";
-import { resetMaskedTiles } from "../media/masked.js?v=7";
-import { handleCheckWebcamReq } from "../media/webcam.js?v=7";
-import { renderRoomUsers, renderGameOptions, updateHostControls, requestSetNickname } from "./lobby.js?v=7";
-import { cancelRoundEndAck } from "./result.js?v=7";
-import { showScreen, setText, formatScore } from "./screens.js?v=7";
+import { state, nicknameOf, resetGameForReplay } from "../core/state.js?v=8";
+import { disableAutoReconnect, ensureConnected } from "../core/socket.js?v=8";
+import { stopStreaming } from "../media/streaming.js?v=8";
+import { resetMaskedTiles } from "../media/masked.js?v=8";
+import { handleCheckWebcamReq } from "../media/webcam.js?v=8";
+import { renderRoomUsers, renderGameOptions, updateHostControls, requestSetNickname } from "./lobby.js?v=8";
+import { cancelRoundEndAck } from "./result.js?v=8";
+import { showScreen, setText, formatScore } from "./screens.js?v=8";
 
 const RANK_TITLES = {
   1: "수석 그림자 연구원",

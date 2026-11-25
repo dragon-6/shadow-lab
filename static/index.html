@@ -977,7 +977,7 @@
         <div class="players-card">
           <div class="card-top">
             <span>PLAYERS</span>
-            <span id="userCountBadge">0 / 4</span>
+            <span id="userCountBadge">0명 접속 중</span>
           </div>
           <ul id="userList"></ul>
         </div>
@@ -1002,12 +1002,12 @@
             <span class="box-title">OPTIONS</span>
             <div class="opt-grid">
               <label class="field">
-                <span>ROUNDS (1~10)</span>
-                <input id="roundInput" type="number" min="1" max="10" />
+                <span>ROUNDS</span>
+                <input id="roundInput" type="number" step="1" />
               </label>
               <label class="field">
-                <span>TIME (5~60S)</span>
-                <input id="timeInput" type="number" min="5" max="60" />
+                <span>TIME (SEC)</span>
+                <input id="timeInput" type="number" step="1" />
               </label>
               <button id="optionSubmitBtn" type="button">적용</button>
             </div>
@@ -1065,6 +1065,6 @@
     </main>
   </div>
 
-  <script type="module" src="./js/main.js?v=7"></script>
+  <script type="module" src="./js/main.js?v=8"></script>
 </body>
 </html>

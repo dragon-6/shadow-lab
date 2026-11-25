@@ -1,19 +1,19 @@
 // ============================================================
 // game.js - 3-1 라운드 시작 / 구현 시작 (ROUND_START, START_STREAMING)
 // ============================================================
-import { state } from "../core/state.js?v=7";
-import { showScreen, setText } from "./screens.js?v=7";
-import { DEFAULT_WIDTH, DEFAULT_HEIGHT } from "../media/webcam.js?v=7";
+import { state } from "../core/state.js?v=8";
+import { showScreen, setText } from "./screens.js?v=8";
+import { DEFAULT_WIDTH, DEFAULT_HEIGHT } from "../media/webcam.js?v=8";
 import {
   beginStreaming,
   stopStreaming,
   startCountdownUI,
   DEFAULT_PLAY_SECONDS,
   DEFAULT_FPS,
-} from "../media/streaming.js?v=7";
-import { resetMaskedTiles, syncMaskedTiles, setTopicFrameImage } from "../media/masked.js?v=7";
-import { cancelRoundEndAck } from "./result.js?v=7";
-import { renderRoomUsers } from "./lobby.js?v=7";
+} from "../media/streaming.js?v=8";
+import { resetMaskedTiles, syncMaskedTiles, setTopicFrameImage } from "../media/masked.js?v=8";
+import { cancelRoundEndAck } from "./result.js?v=8";
+import { renderRoomUsers } from "./lobby.js?v=8";
 
 export const PREPARE_COUNTDOWN_SEC = 3; // 준비 카운트다운 (UI 표시용, 실제 시작은 START_STREAMING 기준)
 
