@@ -13,6 +13,7 @@ import {
 } from "../media/streaming.js";
 import { resetMaskedTiles, syncMaskedTiles } from "../media/masked.js";
 import { cancelRoundEndAck } from "./result.js";
+import { renderRoomUsers } from "./lobby.js";
 
 export const PREPARE_COUNTDOWN_SEC = 3; // 준비 카운트다운 (UI 표시용, 실제 시작은 START_STREAMING 기준)
 
@@ -33,6 +34,7 @@ export function handleRoundStart(payload) {
     // 새 게임의 첫 라운드 시작 시 이전 점수 초기화
     state.totalScores = {};
     state.lastScoredRound = 0;
+    renderRoomUsers();
   }
 
   state.gameState = "IN_GAME";

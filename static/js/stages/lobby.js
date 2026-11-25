@@ -4,6 +4,7 @@
 import { state, setMyAuthInfo, setMyNickname } from "../core/state.js";
 import { sendMessage } from "../core/socket.js";
 import { syncMaskedTiles } from "../media/masked.js";
+import { formatScore } from "./screens.js";
 
 const MAX_PLAYERS = 4;
 const START_LOCK_MS = 2000;
@@ -435,7 +436,17 @@ export function renderRoomUsers() {
     const hostBadge = user.isHost ? " [방장]" : "";
     const meBadge = user.uuid === state.myUuid ? " (나)" : "";
     const connBadge = user.isConnected === false ? " (연결 끊김)" : "";
-    li.textContent = `${user.nickname || "이름 없음"}${hostBadge}${meBadge}${connBadge}`;
+
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "user-name";
+    nameSpan.textContent = `${user.nickname || "이름 없음"}${hostBadge}${meBadge}${connBadge}`;
+
+    const score = state.totalScores[user.uuid] ?? user.score ?? 0;
+    const scoreSpan = document.createElement("span");
+    scoreSpan.className = "user-score";
+    scoreSpan.textContent = `${formatScore(score)}점`;
+
+    li.append(nameSpan, scoreSpan);
     listEl.appendChild(li);
   });
 

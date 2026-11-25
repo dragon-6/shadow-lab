@@ -9,6 +9,7 @@ import { syncMaskedTiles } from "../media/masked.js";
 import { renderRoundInfo, PREPARE_COUNTDOWN_SEC } from "../stages/game.js";
 import { showRoundResult, cancelRoundEndAck } from "../stages/result.js";
 import { restoreGameOver } from "../stages/gameover.js";
+import { renderRoomUsers } from "../stages/lobby.js";
 
 // 서버에서 전달하는 게임 상태 문자열 정규화
 function normalizeGameState(rawState, currentRound) {
@@ -80,6 +81,7 @@ export function restoreFromReconnect(payload) {
     // 결과 단계면 이번 라운드까지 누적에 포함된 것으로 간주 (이중 합산 방지)
     state.lastScoredRound =
       state.roundPhase === "RESULT" ? state.currentRound : Math.max(state.currentRound - 1, 0);
+    renderRoomUsers(); // 재접속 시 복구된 누적 점수를 플레이어 목록에 즉시 반영
   }
 
   console.log(

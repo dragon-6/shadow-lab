@@ -342,6 +342,27 @@
       box-shadow: none;
     }
 
+    #userList li .user-name {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    #userList li .user-score {
+      margin-left: auto;
+      flex-shrink: 0;
+      font-size: 12px;
+      font-weight: 800;
+      color: #c4b5fd;
+      background: rgba(139, 92, 246, 0.16);
+      border: 1px solid rgba(139, 92, 246, 0.32);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-variant-numeric: tabular-nums;
+    }
+
     /* 우측 메인 스테이지 공통 */
     .stage-panel {
       background: var(--panel);
@@ -666,6 +687,7 @@
       min-height: 0;
       object-fit: contain;
       display: block;
+      transform: scaleX(-1);
       opacity: 0;
       transition: opacity 0.15s ease;
     }

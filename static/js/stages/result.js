@@ -5,6 +5,7 @@ import { state, nicknameOf } from "../core/state.js";
 import { sendMessage } from "../core/socket.js";
 import { stopStreaming } from "../media/streaming.js";
 import { showScreen, setText, formatScore } from "./screens.js";
+import { renderRoomUsers } from "./lobby.js";
 
 const RESULT_DISPLAY_MS = 4000; // 결과 화면을 보여준 뒤 Ack를 보내는 시간
 const ACK_RETRY_MS = 1000;      // 연결 끊김으로 Ack 전송에 실패했을 때 재시도 간격
@@ -35,6 +36,7 @@ export function handleRoundResult(payload) {
   state.roundPhase = "RESULT";
   state.roundScores = payload.roundScores;
   addToTotals(round, payload.roundScores);
+  renderRoomUsers(); // 플레이어 목록의 실시간 누적 점수 즉시 갱신
 
   showRoundResult(round);
 }
