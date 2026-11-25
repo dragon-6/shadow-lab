@@ -1,11 +1,11 @@
 # 웹소켓 메시지 정리
 
-> **기준 일시**: 2026년 11월 17일 00시  
-> **버전**: `1.0`
+> **기준 일시**: 2026년 11월 25일 11시  
+> **버전**: `1.1`
 
-### 1.0 ver 주요 변경 사항
-1. `RECONNECT_FAIL`이 `ERROR`로 변경되고, 더 많은 실패(`FAIL`) 응답을 서버에서 통합 전송합니다. (예: `JOIN_FAIL`, `GAME_START_FAIL`, `RECONNECT_FAIL`)
-2. `RECONNECT_SUCCESS`, `ROOM_USERS_UPDATE`의 `users` 항목에 `webcamReady` 필드가 추가되어 반환됩니다.
+### 1.1 ver 주요 변경 사항
+1. `START_STREAMING`에 `topicFrameImageBase64` 항목이 추가됩니다.<br>
+ `topicFrameImageBase64`은 클라이언트에서 `maskedImageBase64`와 합쳐져서 화면에 나오게 됩니다.
 
 ---
 
@@ -244,7 +244,8 @@
     "playTimeSeconds": 20,
     "targetFps": 10,
     "width": 320,
-    "height": 240
+    "height": 240,
+    "topicFrameImageBase64": "data:image/png;base64,iVBORw0KGgoAAAANSUh..."
   }
 }
 ```
