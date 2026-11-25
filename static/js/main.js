@@ -7,7 +7,15 @@ import {
   setMyAuthInfo,
   clearMyAuthInfo,
   getSavedNickname,
+<<<<<<< HEAD
 } from "./core/state.js?v=7";
+=======
+<<<<<<< HEAD
+} from "./core/state.js?v=7";
+=======
+} from "./core/state.js?v=6";
+>>>>>>> da122f35b6280cf0ebd1721cbeedc983280daf6b
+>>>>>>> a1b9681b36005b68743e0e845402071d999e6be6
 import {
   connectWebSocket,
   sendMessage,
@@ -15,12 +23,27 @@ import {
   disableAutoReconnect,
   resetReconnectRetries,
   updateConnectionBadge,
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> a1b9681b36005b68743e0e845402071d999e6be6
 } from "./core/socket.js?v=7";
 import { restoreFromReconnect } from "./core/restore.js?v=7";
 import { handleCheckWebcamReq, initWebcam } from "./media/webcam.js?v=7";
 import { stopStreaming } from "./media/streaming.js?v=7";
 import { handleMaskedStream, resetMaskedTiles } from "./media/masked.js?v=7";
 import { showScreen } from "./stages/screens.js?v=7";
+<<<<<<< HEAD
+=======
+=======
+} from "./core/socket.js?v=6";
+import { restoreFromReconnect } from "./core/restore.js?v=6";
+import { handleCheckWebcamReq, initWebcam } from "./media/webcam.js?v=6";
+import { stopStreaming } from "./media/streaming.js?v=6";
+import { handleMaskedStream, resetMaskedTiles } from "./media/masked.js?v=6";
+import { showScreen } from "./stages/screens.js?v=6";
+>>>>>>> da122f35b6280cf0ebd1721cbeedc983280daf6b
+>>>>>>> a1b9681b36005b68743e0e845402071d999e6be6
 import {
   requestSetNickname,
   handleRoomUsersUpdate,
@@ -32,14 +55,34 @@ import {
   updateHostControls,
   showHintNotice,
   syncOptionDirtyState,
+<<<<<<< HEAD
 } from "./stages/lobby.js?v=7";
 import { handleRoundStart, handleStartStreaming } from "./stages/game.js?v=7";
+=======
+<<<<<<< HEAD
+} from "./stages/lobby.js?v=7";
+import { handleRoundStart, handleStartStreaming } from "./stages/game.js?v=7";
+=======
+} from "./stages/lobby.js?v=6";
+import { handleRoundStart, handleStartStreaming } from "./stages/game.js?v=6";
+>>>>>>> da122f35b6280cf0ebd1721cbeedc983280daf6b
+>>>>>>> a1b9681b36005b68743e0e845402071d999e6be6
 import {
   handleFrameReceivedWait,
   handleRoundResult,
   cancelRoundEndAck,
+<<<<<<< HEAD
 } from "./stages/result.js?v=7";
 import { handleGameOver, playAgain } from "./stages/gameover.js?v=7";
+=======
+<<<<<<< HEAD
+} from "./stages/result.js?v=7";
+import { handleGameOver, playAgain } from "./stages/gameover.js?v=7";
+=======
+} from "./stages/result.js?v=6";
+import { handleGameOver, playAgain } from "./stages/gameover.js?v=6";
+>>>>>>> da122f35b6280cf0ebd1721cbeedc983280daf6b
+>>>>>>> a1b9681b36005b68743e0e845402071d999e6be6
 
 let rejoinPending = false;
 let lastDeniedLogAt = 0;

@@ -2,7 +2,15 @@
 // socket.js - 웹소켓 코어 (연결 / 메시지 전송 / 자동 재접속)
 // 백엔드가 WebSocketDisconnect 이벤트로 연결 상태를 감지하므로 별도 PING/PONG 하트비트는 사용하지 않음
 // ============================================================
+<<<<<<< HEAD
 import { state, getSavedUuid, backupSessionOnUnload } from "./state.js?v=7";
+=======
+<<<<<<< HEAD
+import { state, getSavedUuid, backupSessionOnUnload } from "./state.js?v=7";
+=======
+import { state, getSavedUuid, backupSessionOnUnload } from "./state.js?v=6";
+>>>>>>> da122f35b6280cf0ebd1721cbeedc983280daf6b
+>>>>>>> a1b9681b36005b68743e0e845402071d999e6be6
 
 // ---------- 설정 ----------
 // [1. 기본 주소 동적 생성]
