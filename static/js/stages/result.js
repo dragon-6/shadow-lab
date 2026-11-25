@@ -1,11 +1,19 @@
 // ============================================================
 // result.js - 3-3 결과 대기 / 라운드 점수, 3-4 라운드 종료 Ack
 // ============================================================
+<<<<<<< HEAD
 import { state, nicknameOf } from "../core/state.js?v=7";
 import { sendMessage } from "../core/socket.js?v=7";
 import { stopStreaming } from "../media/streaming.js?v=7";
 import { showScreen, setText, formatScore } from "./screens.js?v=7";
 import { renderRoomUsers } from "./lobby.js?v=7";
+=======
+import { state, nicknameOf } from "../core/state.js?v=6";
+import { sendMessage } from "../core/socket.js?v=6";
+import { stopStreaming } from "../media/streaming.js?v=6";
+import { showScreen, setText, formatScore } from "./screens.js?v=6";
+import { renderRoomUsers } from "./lobby.js?v=6";
+>>>>>>> da122f35b6280cf0ebd1721cbeedc983280daf6b
 
 const RESULT_DISPLAY_MS = 4000; // 결과 화면을 보여준 뒤 Ack를 보내는 시간
 const ACK_RETRY_MS = 1000;      // 연결 끊김으로 Ack 전송에 실패했을 때 재시도 간격
