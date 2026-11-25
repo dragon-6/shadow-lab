@@ -1,8 +1,8 @@
 // ============================================================
 // webcam.js - 웹캠 준비 확인 / 스트림 관리 / 프레임 캡처(320x240 JPEG Base64)
 // ============================================================
-import { state } from "../core/state.js";
-import { sendMessage } from "../core/socket.js";
+import { state } from "../core/state.js?v=7";
+import { sendMessage } from "../core/socket.js?v=7";
 
 // 기본 해상도 및 JPEG 압축 품질
 export const DEFAULT_WIDTH = 320;
