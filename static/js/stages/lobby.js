@@ -1,19 +1,14 @@
 // ============================================================
 // lobby.js - 대기실 로직 (닉네임/옵션 조건 검증, 미적용 강조, 임팩트 알림창)
 // ============================================================
-import { state, setMyAuthInfo, setMyNickname } from "../core/state.js?v=7";
-import { sendMessage } from "../core/socket.js?v=7";
-import { syncMaskedTiles } from "../media/masked.js?v=7";
-import { formatScore } from "./screens.js?v=7";
+import { state, setMyAuthInfo, setMyNickname } from "../core/state.js?v=8";
+import { sendMessage } from "../core/socket.js?v=8";
+import { syncMaskedTiles } from "../media/masked.js?v=8";
+import { formatScore } from "./screens.js?v=8";
 
-const MAX_PLAYERS = 4;
 const START_LOCK_MS = 2000;
 const MIN_NICK_LEN = 2;
 const MAX_NICK_LEN = 12;
-const MIN_ROUNDS = 1;
-const MAX_ROUNDS = 10;
-const MIN_PLAY_SECONDS = 5;
-const MAX_PLAY_SECONDS = 60;
 
 let startLocked = false;
 let hintNotice = null;
@@ -21,7 +16,6 @@ let hintTimer = null;
 let pendingNickToast = false;
 let pendingOptionToast = false;
 let hasReceivedInitialOptions = false;
-let lastRangeAlertAt = 0;
 
 /**
  * 화면 상단 중앙에 강력한 임팩트 토스트 알림창을 표시
@@ -192,36 +186,16 @@ export function requestUpdateGameOptions(rawRounds, rawSeconds) {
   const totalRounds = Number(roundStr);
   const playTimeSeconds = Number(timeStr);
 
-  // 1. 정수 여부 확인
+  // 1. 정수 여부만 클라이언트에서 1차 확인 (최소/최대 범위 검증은 백엔드에 완전 위임)
   if (!roundStr || !Number.isInteger(totalRounds)) {
     if (roundEl) roundEl.dataset.invalid = "true";
-    showImpactToast("라운드 수는 정수로 입력해주세요! (1~10)", "error");
+    showImpactToast("라운드 수는 정수로 입력해주세요!", "error");
     return false;
   }
 
   if (!timeStr || !Number.isInteger(playTimeSeconds)) {
     if (timeEl) timeEl.dataset.invalid = "true";
-    showImpactToast("제한 시간은 정수로 입력해주세요! (5~60초)", "error");
-    return false;
-  }
-
-  // 2. 라운드 조건 범위(1~10) 확인 - 자동 보정하지 않고 즉시 경고!
-  if (totalRounds < MIN_ROUNDS || totalRounds > MAX_ROUNDS) {
-    if (roundEl) roundEl.dataset.invalid = "true";
-    showImpactToast(
-      `라운드 수는 ${MIN_ROUNDS}~${MAX_ROUNDS} 사이로 설정해야 합니다! (입력값: ${totalRounds})`,
-      "error",
-    );
-    return false;
-  }
-
-  // 3. 제한 시간 조건 범위(5~60) 확인 - 자동 보정하지 않고 즉시 경고!
-  if (playTimeSeconds < MIN_PLAY_SECONDS || playTimeSeconds > MAX_PLAY_SECONDS) {
-    if (timeEl) timeEl.dataset.invalid = "true";
-    showImpactToast(
-      `제한 시간은 ${MIN_PLAY_SECONDS}~${MAX_PLAY_SECONDS}초 사이로 설정해야 합니다! (입력값: ${playTimeSeconds}초)`,
-      "error",
-    );
+    showImpactToast("제한 시간은 정수로 입력해주세요!", "error");
     return false;
   }
 
@@ -295,10 +269,10 @@ export function handleGameOptionsUpdated(payload, isInitialSync = false) {
 
 /**
  * 방장이 옵션 숫자를 바꿨을 때:
- * 1) 조건 범위(라운드 1~10, 시간 5~60)를 벗어나면 빨간 경고(data-invalid) + 알림창 표시
+ * 1) 정수가 아니거나 비어 있으면 빨간 경고(data-invalid) 표시 (범위 제한은 백엔드에 위임)
  * 2) 아직 '적용' 버튼을 누르지 않았으면 노란 강조(data-dirty="true") + '적용 필요!' 버튼 활성화
  */
-export function syncOptionDirtyState(showToastOnInvalid = true) {
+export function syncOptionDirtyState() {
   const roundEl = document.getElementById("roundInput");
   const timeEl = document.getElementById("timeInput");
   const btnEl = document.getElementById("optionSubmitBtn");
@@ -321,10 +295,8 @@ export function syncOptionDirtyState(showToastOnInvalid = true) {
   const rVal = Number(rStr);
   const tVal = Number(tStr);
 
-  const roundInvalid =
-    !rStr || !Number.isInteger(rVal) || rVal < MIN_ROUNDS || rVal > MAX_ROUNDS;
-  const timeInvalid =
-    !tStr || !Number.isInteger(tVal) || tVal < MIN_PLAY_SECONDS || tVal > MAX_PLAY_SECONDS;
+  const roundInvalid = !rStr || !Number.isInteger(rVal);
+  const timeInvalid = !tStr || !Number.isInteger(tVal);
 
   if (roundInvalid) {
     roundEl.dataset.invalid = "true";
@@ -338,17 +310,6 @@ export function syncOptionDirtyState(showToastOnInvalid = true) {
     delete timeEl.dataset.dirty;
   } else {
     delete timeEl.dataset.invalid;
-  }
-
-  // 조건 밖 숫자를 입력했을 때 즉시 경고 토스트 출력 (도배 방지를 위해 0.6초 쿨타임)
-  const now = Date.now();
-  if (showToastOnInvalid && (roundInvalid || timeInvalid) && now - lastRangeAlertAt > 600) {
-    lastRangeAlertAt = now;
-    if (roundInvalid) {
-      showImpactToast(`라운드는 ${MIN_ROUNDS}~${MAX_ROUNDS} 사이만 가능합니다!`, "error");
-    } else if (timeInvalid) {
-      showImpactToast(`제한 시간은 ${MIN_PLAY_SECONDS}~${MAX_PLAY_SECONDS}초 사이만 가능합니다!`, "error");
-    }
   }
 
   const roundDirty = !roundInvalid && rVal !== state.gameOptions.totalRounds;
@@ -458,7 +419,7 @@ export function renderRoomUsers() {
   const countEl = document.getElementById("userCountBadge");
   if (countEl) {
     const connectedCount = state.users.filter((u) => u.isConnected !== false).length;
-    countEl.textContent = `${connectedCount} / ${MAX_PLAYERS}명 접속 중`;
+    countEl.textContent = `${connectedCount}명 접속 중`;
   }
 }
 
