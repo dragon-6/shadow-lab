@@ -31,8 +31,15 @@ class GameManager:
         NOT_PERMISSION = "권한이 부족합니다. 방장이 맞는지 확인해주세요."
         DENIED = "비정상적인 접근입니다. 새로고침을 권장합니다."
 
-    MAX_PLAYERS = 4
     MIN_PLAYERS = 2
+    MAX_PLAYERS = 4
+
+    MIN_ROUND = 1
+    MAX_ROUND = 5
+
+    MIN_PLAY_TIME = 5
+    MAX_PLAY_TIME = 60
+
     LOBBY_TIMEOUT_SECONDS = 10
 
     def __init__(self):
@@ -42,6 +49,7 @@ class GameManager:
 
         self.Topic = Enum("Topic", CVModule.get_topics())
         self.topic = next(iter(self.Topic))
+        self.topic_queue: List = []
 
         self.game_state = self.GameState.IN_LOBBY
         self.round_phase = self.RoundPhase.WAITING
@@ -69,6 +77,17 @@ class GameManager:
         scheduler.cancel(f"disconnect:{uuid_str}")
         self.players.pop(uuid_str, None)
         self.accumulated_scores.pop(uuid_str, None)
+
+    def _pick_next_topic(self):
+        if not self.topic_queue: # 큐 리셋
+            pool = list(self.Topic)
+            random.shuffle(pool)
+            # 주제가 2개 이상일 때 이전 라운드 주제와 연속으로 겹치는 경우 순서 교체
+            if len(pool) > 1 and pool[0] == self.topic:
+                pool[0], pool[-1] = pool[-1], pool[0]
+            self.topic_queue = pool
+
+        return self.topic_queue.pop(0)
 
     def _reset_room(self):
         scheduler.cancel_all()
@@ -207,13 +226,13 @@ class GameManager:
             return
 
         if total_rounds is not None:
-            if not isinstance(total_rounds, int) or isinstance(total_rounds, bool) or not (1 <= total_rounds <= 10):
-                await ws_module.send_error(player.uuid, self.Error.DENIED, "라운드는 1부터 10까지 지정 가능합니다.")
+            if not isinstance(total_rounds, int) or isinstance(total_rounds, bool) or not (self.MIN_ROUND <= total_rounds <= self.MAX_ROUND):
+                await ws_module.send_error(player.uuid, self.Error.DENIED, f"라운드는 {self.MIN_ROUND}부터 {self.MAX_ROUND}까지 지정 가능합니다.")
                 return
 
         if play_time_seconds is not None:
-            if not isinstance(play_time_seconds, int) or isinstance(play_time_seconds, bool) or not (5 <= play_time_seconds <= 60):
-                await ws_module.send_error(player.uuid, self.Error.DENIED, "시간은 5초부터 60초까지 지정 가능합니다.")
+            if not isinstance(play_time_seconds, int) or isinstance(play_time_seconds, bool) or not (self.MIN_PLAY_TIME <= play_time_seconds <= self.MAX_PLAY_TIME):
+                await ws_module.send_error(player.uuid, self.Error.DENIED, f"시간은 {self.MIN_PLAY_TIME}초부터 {self.MAX_PLAY_TIME}초까지 지정 가능합니다.")
                 return
 
         if total_rounds is not None:
@@ -295,7 +314,7 @@ class GameManager:
     async def run_next_round(self):
         self.current_round += 1
         self.round_phase = self.RoundPhase.TOPIC_SHOW
-        self.topic = random.choice(list(self.Topic))
+        self.topic = self._pick_next_topic()
 
         for p in self.players.values():
             p.round_ack = False
@@ -306,6 +325,12 @@ class GameManager:
             "totalRounds": self.total_rounds,
             "topic": self.topic.name
         })
+        topic_frame_image = await asyncio.to_thread(
+            CVModule.get_topic_frame_image,
+            self.topic.value,
+            self.width,
+            self.height
+        )
         await asyncio.sleep(3)
 
         self.round_phase = self.RoundPhase.STREAMING
@@ -315,7 +340,8 @@ class GameManager:
             "playTimeSeconds": self.play_time_seconds,
             "targetFps": self.target_fps,
             "width": self.width,
-            "height": self.height
+            "height": self.height,
+            "topicFrameImageBase64": topic_frame_image
         })
         await asyncio.sleep(self.play_time_seconds)
 
