@@ -31,8 +31,15 @@ class GameManager:
         NOT_PERMISSION = "권한이 부족합니다. 방장이 맞는지 확인해주세요."
         DENIED = "비정상적인 접근입니다. 새로고침을 권장합니다."
 
-    MAX_PLAYERS = 4
     MIN_PLAYERS = 2
+    MAX_PLAYERS = 4
+
+    MIN_ROUND = 1
+    MAX_ROUND = 5
+
+    MIN_PLAY_TIME = 5
+    MAX_PLAY_TIME = 60
+
     LOBBY_TIMEOUT_SECONDS = 10
 
     def __init__(self):
@@ -219,13 +226,13 @@ class GameManager:
             return
 
         if total_rounds is not None:
-            if not isinstance(total_rounds, int) or isinstance(total_rounds, bool) or not (1 <= total_rounds <= 10):
-                await ws_module.send_error(player.uuid, self.Error.DENIED, "라운드는 1부터 10까지 지정 가능합니다.")
+            if not isinstance(total_rounds, int) or isinstance(total_rounds, bool) or not (self.MIN_ROUND <= total_rounds <= self.MAX_ROUND):
+                await ws_module.send_error(player.uuid, self.Error.DENIED, f"라운드는 {self.MIN_ROUND}부터 {self.MAX_ROUND}까지 지정 가능합니다.")
                 return
 
         if play_time_seconds is not None:
-            if not isinstance(play_time_seconds, int) or isinstance(play_time_seconds, bool) or not (5 <= play_time_seconds <= 60):
-                await ws_module.send_error(player.uuid, self.Error.DENIED, "시간은 5초부터 60초까지 지정 가능합니다.")
+            if not isinstance(play_time_seconds, int) or isinstance(play_time_seconds, bool) or not (self.MIN_PLAY_TIME <= play_time_seconds <= self.MAX_PLAY_TIME):
+                await ws_module.send_error(player.uuid, self.Error.DENIED, f"시간은 {self.MIN_PLAY_TIME}초부터 {self.MAX_PLAY_TIME}초까지 지정 가능합니다.")
                 return
 
         if total_rounds is not None:
