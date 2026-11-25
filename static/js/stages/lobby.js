@@ -1,23 +1,10 @@
 // ============================================================
 // lobby.js - 대기실 로직 (닉네임/옵션 조건 검증, 미적용 강조, 임팩트 알림창)
 // ============================================================
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> a1b9681b36005b68743e0e845402071d999e6be6
 import { state, setMyAuthInfo, setMyNickname } from "../core/state.js?v=7";
 import { sendMessage } from "../core/socket.js?v=7";
 import { syncMaskedTiles } from "../media/masked.js?v=7";
 import { formatScore } from "./screens.js?v=7";
-<<<<<<< HEAD
-=======
-=======
-import { state, setMyAuthInfo, setMyNickname } from "../core/state.js?v=6";
-import { sendMessage } from "../core/socket.js?v=6";
-import { syncMaskedTiles } from "../media/masked.js?v=6";
-import { formatScore } from "./screens.js?v=6";
->>>>>>> da122f35b6280cf0ebd1721cbeedc983280daf6b
->>>>>>> a1b9681b36005b68743e0e845402071d999e6be6
 
 const MAX_PLAYERS = 4;
 const START_LOCK_MS = 2000;

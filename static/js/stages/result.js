@@ -6,11 +6,6 @@ import { sendMessage } from "../core/socket.js?v=7";
 import { stopStreaming } from "../media/streaming.js?v=7";
 import { showScreen, setText, formatScore } from "./screens.js?v=7";
 import { renderRoomUsers } from "./lobby.js?v=7";
-import { state, nicknameOf } from "../core/state.js?v=6";
-import { sendMessage } from "../core/socket.js?v=6";
-import { stopStreaming } from "../media/streaming.js?v=6";
-import { showScreen, setText, formatScore } from "./screens.js?v=6";
-import { renderRoomUsers } from "./lobby.js?v=6";
 
 const RESULT_DISPLAY_MS = 4000; // 결과 화면을 보여준 뒤 Ack를 보내는 시간
 const ACK_RETRY_MS = 1000;      // 연결 끊김으로 Ack 전송에 실패했을 때 재시도 간격

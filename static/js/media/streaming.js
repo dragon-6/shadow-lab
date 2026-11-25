@@ -1,23 +1,10 @@
 // ============================================================
 // streaming.js - 영상 송신 루프 (3-2 ① SEND_FRAME) + 카운트다운
 // ============================================================
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> a1b9681b36005b68743e0e845402071d999e6be6
 import { sendMessage, isSendBacklogged } from "../core/socket.js?v=7";
 import { initWebcam, captureFrameBase64 } from "./webcam.js?v=7";
 import { setText } from "../stages/screens.js?v=7";
 import { startTicker } from "../core/ticker.js?v=7";
-<<<<<<< HEAD
-=======
-=======
-import { sendMessage, isSendBacklogged } from "../core/socket.js?v=6";
-import { initWebcam, captureFrameBase64 } from "./webcam.js?v=6";
-import { setText } from "../stages/screens.js?v=6";
-import { startTicker } from "../core/ticker.js?v=6";
->>>>>>> da122f35b6280cf0ebd1721cbeedc983280daf6b
->>>>>>> a1b9681b36005b68743e0e845402071d999e6be6
 
 // 서버가 사양을 주지 않을 때 쓰는 기본값 (규격: 20초, 10fps)
 export const DEFAULT_PLAY_SECONDS = 20;
