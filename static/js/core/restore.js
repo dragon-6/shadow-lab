@@ -1,14 +1,15 @@
 // ============================================================
 // restore.js - 재접속 성공(RECONNECT_SUCCESS) 시 진행 중이던 게임 상태/화면 복구
 // ============================================================
-import { state } from "./state.js";
-import { showScreen, setText } from "../stages/screens.js";
-import { DEFAULT_WIDTH, DEFAULT_HEIGHT } from "../media/webcam.js";
-import { beginStreaming, stopStreaming, startCountdownUI, DEFAULT_FPS } from "../media/streaming.js";
-import { syncMaskedTiles } from "../media/masked.js";
-import { renderRoundInfo, PREPARE_COUNTDOWN_SEC } from "../stages/game.js";
-import { showRoundResult, cancelRoundEndAck } from "../stages/result.js";
-import { restoreGameOver } from "../stages/gameover.js";
+import { state } from "./state.js?v=7";
+import { showScreen, setText } from "../stages/screens.js?v=7";
+import { DEFAULT_WIDTH, DEFAULT_HEIGHT } from "../media/webcam.js?v=7";
+import { beginStreaming, stopStreaming, startCountdownUI, DEFAULT_FPS } from "../media/streaming.js?v=7";
+import { syncMaskedTiles, setTopicFrameImage } from "../media/masked.js?v=7";
+import { renderRoundInfo, PREPARE_COUNTDOWN_SEC } from "../stages/game.js?v=7";
+import { showRoundResult, cancelRoundEndAck } from "../stages/result.js?v=7";
+import { restoreGameOver } from "../stages/gameover.js?v=7";
+import { renderRoomUsers } from "../stages/lobby.js?v=7";
 
 // 서버에서 전달하는 게임 상태 문자열 정규화
 function normalizeGameState(rawState, currentRound) {
@@ -80,6 +81,7 @@ export function restoreFromReconnect(payload) {
     // 결과 단계면 이번 라운드까지 누적에 포함된 것으로 간주 (이중 합산 방지)
     state.lastScoredRound =
       state.roundPhase === "RESULT" ? state.currentRound : Math.max(state.currentRound - 1, 0);
+    renderRoomUsers(); // 재접속 시 복구된 누적 점수를 플레이어 목록에 즉시 반영
   }
 
   console.log(
@@ -96,7 +98,8 @@ export function restoreFromReconnect(payload) {
     return;
   }
 
-  // 진행 중인 게임: 라운드 정보 + 영상 타일 복구
+  // 진행 중인 게임: 라운드 정보 + 제시어 프레임 + 영상 타일 복구
+  setTopicFrameImage(payload.topicFrameImageBase64 ?? null);
   syncMaskedTiles();
   renderRoundInfo();
 

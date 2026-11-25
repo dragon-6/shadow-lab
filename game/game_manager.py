@@ -32,7 +32,7 @@ class GameManager:
         DENIED = "비정상적인 접근입니다. 새로고침을 권장합니다."
 
     MAX_PLAYERS = 4
-    MIN_PLAYERS = 2
+    MIN_PLAYERS = 1
     LOBBY_TIMEOUT_SECONDS = 10
 
     def __init__(self):

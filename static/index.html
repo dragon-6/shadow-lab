@@ -342,6 +342,27 @@
       box-shadow: none;
     }
 
+    #userList li .user-name {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    #userList li .user-score {
+      margin-left: auto;
+      flex-shrink: 0;
+      font-size: 12px;
+      font-weight: 800;
+      color: #c4b5fd;
+      background: rgba(139, 92, 246, 0.16);
+      border: 1px solid rgba(139, 92, 246, 0.32);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-variant-numeric: tabular-nums;
+    }
+
     /* 우측 메인 스테이지 공통 */
     .stage-panel {
       background: var(--panel);
@@ -660,17 +681,44 @@
       border-color: var(--danger);
     }
 
-    .masked-tile img {
+    .masked-stage {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .masked-tile img.masked-frame {
       width: 100%;
       height: 100%;
       min-height: 0;
       object-fit: contain;
       display: block;
+      transform: scaleX(-1);
       opacity: 0;
       transition: opacity 0.15s ease;
     }
 
-    .masked-tile.has-frame img {
+    .masked-tile.has-frame img.masked-frame {
+      opacity: 1;
+    }
+
+    .masked-tile img.topic-frame-overlay {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      transform: scaleX(-1);
+      pointer-events: none;
+      z-index: 2;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+
+    .masked-tile.has-topic-frame img.topic-frame-overlay {
       opacity: 1;
     }
 
@@ -730,6 +778,29 @@
     #roundResultList li.is-me,
     #rankingList li.is-me {
       outline: 1px solid var(--accent);
+    }
+
+    .ranking-left {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .ranking-title-badge {
+      font-size: 12px;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: rgba(139, 92, 246, 0.22);
+      border: 1px solid rgba(139, 92, 246, 0.45);
+      color: #ddd6fe;
+    }
+
+    #rankingList li.rank-1 .ranking-title-badge {
+      background: rgba(245, 158, 11, 0.24);
+      border-color: rgba(245, 158, 11, 0.55);
+      color: #fde68a;
     }
 
     #myResult {
@@ -931,12 +1002,12 @@
             <span class="box-title">OPTIONS</span>
             <div class="opt-grid">
               <label class="field">
-                <span>ROUNDS (1~20)</span>
-                <input id="roundInput" type="number" min="1" max="20" />
+                <span>ROUNDS (1~10)</span>
+                <input id="roundInput" type="number" min="1" max="10" />
               </label>
               <label class="field">
-                <span>TIME (1~120S)</span>
-                <input id="timeInput" type="number" min="1" max="120" />
+                <span>TIME (5~60S)</span>
+                <input id="timeInput" type="number" min="5" max="60" />
               </label>
               <button id="optionSubmitBtn" type="button">적용</button>
             </div>
@@ -994,6 +1065,6 @@
     </main>
   </div>
 
-  <script type="module" src="./js/main.js?v=3"></script>
+  <script type="module" src="./js/main.js?v=7"></script>
 </body>
 </html>
