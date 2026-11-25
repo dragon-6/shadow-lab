@@ -42,6 +42,7 @@ class GameManager:
 
         self.Topic = Enum("Topic", CVModule.get_topics())
         self.topic = next(iter(self.Topic))
+        self.topic_queue: List = []
 
         self.game_state = self.GameState.IN_LOBBY
         self.round_phase = self.RoundPhase.WAITING
@@ -69,6 +70,17 @@ class GameManager:
         scheduler.cancel(f"disconnect:{uuid_str}")
         self.players.pop(uuid_str, None)
         self.accumulated_scores.pop(uuid_str, None)
+
+    def _pick_next_topic(self):
+        if not self.topic_queue: # 큐 리셋
+            pool = list(self.Topic)
+            random.shuffle(pool)
+            # 주제가 2개 이상일 때 이전 라운드 주제와 연속으로 겹치는 경우 순서 교체
+            if len(pool) > 1 and pool[0] == self.topic:
+                pool[0], pool[-1] = pool[-1], pool[0]
+            self.topic_queue = pool
+
+        return self.topic_queue.pop(0)
 
     def _reset_room(self):
         scheduler.cancel_all()
@@ -295,7 +307,7 @@ class GameManager:
     async def run_next_round(self):
         self.current_round += 1
         self.round_phase = self.RoundPhase.TOPIC_SHOW
-        self.topic = random.choice(list(self.Topic))
+        self.topic = self._pick_next_topic()
 
         for p in self.players.values():
             p.round_ack = False
