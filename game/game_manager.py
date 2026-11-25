@@ -318,6 +318,12 @@ class GameManager:
             "totalRounds": self.total_rounds,
             "topic": self.topic.name
         })
+        topic_frame_image = await asyncio.to_thread(
+            CVModule.get_topic_frame_image,
+            self.topic.value,
+            self.width,
+            self.height
+        )
         await asyncio.sleep(3)
 
         self.round_phase = self.RoundPhase.STREAMING
@@ -327,7 +333,8 @@ class GameManager:
             "playTimeSeconds": self.play_time_seconds,
             "targetFps": self.target_fps,
             "width": self.width,
-            "height": self.height
+            "height": self.height,
+            "topicFrameImageBase64": topic_frame_image
         })
         await asyncio.sleep(self.play_time_seconds)
 
