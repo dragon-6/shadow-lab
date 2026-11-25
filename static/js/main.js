@@ -7,7 +7,7 @@ import {
   setMyAuthInfo,
   clearMyAuthInfo,
   getSavedNickname,
-} from "./core/state.js";
+} from "./core/state.js?v=6";
 import {
   connectWebSocket,
   sendMessage,
@@ -15,12 +15,12 @@ import {
   disableAutoReconnect,
   resetReconnectRetries,
   updateConnectionBadge,
-} from "./core/socket.js";
-import { restoreFromReconnect } from "./core/restore.js";
-import { handleCheckWebcamReq, initWebcam } from "./media/webcam.js";
-import { stopStreaming } from "./media/streaming.js";
-import { handleMaskedStream, resetMaskedTiles } from "./media/masked.js";
-import { showScreen } from "./stages/screens.js";
+} from "./core/socket.js?v=6";
+import { restoreFromReconnect } from "./core/restore.js?v=6";
+import { handleCheckWebcamReq, initWebcam } from "./media/webcam.js?v=6";
+import { stopStreaming } from "./media/streaming.js?v=6";
+import { handleMaskedStream, resetMaskedTiles } from "./media/masked.js?v=6";
+import { showScreen } from "./stages/screens.js?v=6";
 import {
   requestSetNickname,
   handleRoomUsersUpdate,
@@ -32,14 +32,14 @@ import {
   updateHostControls,
   showHintNotice,
   syncOptionDirtyState,
-} from "./stages/lobby.js?v=3";
-import { handleRoundStart, handleStartStreaming } from "./stages/game.js";
+} from "./stages/lobby.js?v=6";
+import { handleRoundStart, handleStartStreaming } from "./stages/game.js?v=6";
 import {
   handleFrameReceivedWait,
   handleRoundResult,
   cancelRoundEndAck,
-} from "./stages/result.js";
-import { handleGameOver, playAgain } from "./stages/gameover.js";
+} from "./stages/result.js?v=6";
+import { handleGameOver, playAgain } from "./stages/gameover.js?v=6";
 
 let rejoinPending = false;
 let lastDeniedLogAt = 0;

@@ -1,14 +1,14 @@
 // ============================================================
 // gameover.js - 4. 게임 종료 단계 (GAME_OVER): 최종 순위 / 승리 표시
 // ============================================================
-import { state, nicknameOf, resetGameForReplay } from "../core/state.js";
-import { disableAutoReconnect, ensureConnected } from "../core/socket.js";
-import { stopStreaming } from "../media/streaming.js";
-import { resetMaskedTiles } from "../media/masked.js";
-import { handleCheckWebcamReq } from "../media/webcam.js";
-import { renderRoomUsers, renderGameOptions, updateHostControls, requestSetNickname } from "./lobby.js";
-import { cancelRoundEndAck } from "./result.js";
-import { showScreen, setText, formatScore } from "./screens.js";
+import { state, nicknameOf, resetGameForReplay } from "../core/state.js?v=6";
+import { disableAutoReconnect, ensureConnected } from "../core/socket.js?v=6";
+import { stopStreaming } from "../media/streaming.js?v=6";
+import { resetMaskedTiles } from "../media/masked.js?v=6";
+import { handleCheckWebcamReq } from "../media/webcam.js?v=6";
+import { renderRoomUsers, renderGameOptions, updateHostControls, requestSetNickname } from "./lobby.js?v=6";
+import { cancelRoundEndAck } from "./result.js?v=6";
+import { showScreen, setText, formatScore } from "./screens.js?v=6";
 
 const RANK_TITLES = {
   1: "수석 그림자 연구원",
@@ -129,7 +129,15 @@ function renderRankings() {
 
       const leftSpan = document.createElement("span");
       leftSpan.className = "ranking-left";
-      leftSpan.textContent = `${r.rank}위  [${title}]  ${r.nickname || nicknameOf(r.uuid)}${me}`;
+
+      const nameSpan = document.createElement("span");
+      nameSpan.textContent = `${r.rank}위  ${r.nickname || nicknameOf(r.uuid)}${me}`;
+
+      const titleBadge = document.createElement("span");
+      titleBadge.className = "ranking-title-badge";
+      titleBadge.textContent = title;
+
+      leftSpan.append(nameSpan, titleBadge);
 
       const scoreSpan = document.createElement("span");
       scoreSpan.className = "ranking-score";

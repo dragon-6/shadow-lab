@@ -1,19 +1,19 @@
 // ============================================================
 // game.js - 3-1 라운드 시작 / 구현 시작 (ROUND_START, START_STREAMING)
 // ============================================================
-import { state } from "../core/state.js";
-import { showScreen, setText } from "./screens.js";
-import { DEFAULT_WIDTH, DEFAULT_HEIGHT } from "../media/webcam.js";
+import { state } from "../core/state.js?v=6";
+import { showScreen, setText } from "./screens.js?v=6";
+import { DEFAULT_WIDTH, DEFAULT_HEIGHT } from "../media/webcam.js?v=6";
 import {
   beginStreaming,
   stopStreaming,
   startCountdownUI,
   DEFAULT_PLAY_SECONDS,
   DEFAULT_FPS,
-} from "../media/streaming.js";
-import { resetMaskedTiles, syncMaskedTiles } from "../media/masked.js";
-import { cancelRoundEndAck } from "./result.js";
-import { renderRoomUsers } from "./lobby.js";
+} from "../media/streaming.js?v=6";
+import { resetMaskedTiles, syncMaskedTiles } from "../media/masked.js?v=6";
+import { cancelRoundEndAck } from "./result.js?v=6";
+import { renderRoomUsers } from "./lobby.js?v=6";
 
 export const PREPARE_COUNTDOWN_SEC = 3; // 준비 카운트다운 (UI 표시용, 실제 시작은 START_STREAMING 기준)
 
@@ -34,7 +34,6 @@ export function handleRoundStart(payload) {
     // 새 게임의 첫 라운드 시작 시 이전 점수 초기화
     state.totalScores = {};
     state.lastScoredRound = 0;
-    renderRoomUsers();
   }
 
   state.gameState = "IN_GAME";
@@ -43,6 +42,7 @@ export function handleRoundStart(payload) {
   if (Number.isInteger(totalRounds)) state.gameOptions.totalRounds = totalRounds;
   state.topic = topic ?? "";
   state.roundScores = {};
+  renderRoomUsers(); // 게임 시작(IN_GAME) 전환 직후 플레이어 목록에 0점부터 실시간 점수 표시
 
   console.log(
     `[라운드 시작] ${state.currentRound}/${state.gameOptions.totalRounds} - 제시어: ${state.topic}`

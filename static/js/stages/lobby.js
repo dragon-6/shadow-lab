@@ -1,19 +1,19 @@
 // ============================================================
 // lobby.js - 대기실 로직 (닉네임/옵션 조건 검증, 미적용 강조, 임팩트 알림창)
 // ============================================================
-import { state, setMyAuthInfo, setMyNickname } from "../core/state.js";
-import { sendMessage } from "../core/socket.js";
-import { syncMaskedTiles } from "../media/masked.js";
-import { formatScore } from "./screens.js";
+import { state, setMyAuthInfo, setMyNickname } from "../core/state.js?v=6";
+import { sendMessage } from "../core/socket.js?v=6";
+import { syncMaskedTiles } from "../media/masked.js?v=6";
+import { formatScore } from "./screens.js?v=6";
 
 const MAX_PLAYERS = 4;
 const START_LOCK_MS = 2000;
 const MIN_NICK_LEN = 2;
 const MAX_NICK_LEN = 12;
 const MIN_ROUNDS = 1;
-const MAX_ROUNDS = 20;
-const MIN_PLAY_SECONDS = 1;
-const MAX_PLAY_SECONDS = 120;
+const MAX_ROUNDS = 10;
+const MIN_PLAY_SECONDS = 5;
+const MAX_PLAY_SECONDS = 60;
 
 let startLocked = false;
 let hintNotice = null;
@@ -195,17 +195,17 @@ export function requestUpdateGameOptions(rawRounds, rawSeconds) {
   // 1. 정수 여부 확인
   if (!roundStr || !Number.isInteger(totalRounds)) {
     if (roundEl) roundEl.dataset.invalid = "true";
-    showImpactToast("라운드 수는 정수로 입력해주세요! (1~20)", "error");
+    showImpactToast("라운드 수는 정수로 입력해주세요! (1~10)", "error");
     return false;
   }
 
   if (!timeStr || !Number.isInteger(playTimeSeconds)) {
     if (timeEl) timeEl.dataset.invalid = "true";
-    showImpactToast("제한 시간은 정수로 입력해주세요! (1~120초)", "error");
+    showImpactToast("제한 시간은 정수로 입력해주세요! (5~60초)", "error");
     return false;
   }
 
-  // 2. 라운드 조건 범위(1~20) 확인 - 자동 보정하지 않고 즉시 경고!
+  // 2. 라운드 조건 범위(1~10) 확인 - 자동 보정하지 않고 즉시 경고!
   if (totalRounds < MIN_ROUNDS || totalRounds > MAX_ROUNDS) {
     if (roundEl) roundEl.dataset.invalid = "true";
     showImpactToast(
@@ -215,7 +215,7 @@ export function requestUpdateGameOptions(rawRounds, rawSeconds) {
     return false;
   }
 
-  // 3. 제한 시간 조건 범위(1~120) 확인 - 자동 보정하지 않고 즉시 경고!
+  // 3. 제한 시간 조건 범위(5~60) 확인 - 자동 보정하지 않고 즉시 경고!
   if (playTimeSeconds < MIN_PLAY_SECONDS || playTimeSeconds > MAX_PLAY_SECONDS) {
     if (timeEl) timeEl.dataset.invalid = "true";
     showImpactToast(
@@ -295,7 +295,7 @@ export function handleGameOptionsUpdated(payload, isInitialSync = false) {
 
 /**
  * 방장이 옵션 숫자를 바꿨을 때:
- * 1) 조건 범위(라운드 1~20, 시간 1~120)를 벗어나면 빨간 경고(data-invalid) + 알림창 표시
+ * 1) 조건 범위(라운드 1~10, 시간 5~60)를 벗어나면 빨간 경고(data-invalid) + 알림창 표시
  * 2) 아직 '적용' 버튼을 누르지 않았으면 노란 강조(data-dirty="true") + '적용 필요!' 버튼 활성화
  */
 export function syncOptionDirtyState(showToastOnInvalid = true) {
@@ -441,12 +441,17 @@ export function renderRoomUsers() {
     nameSpan.className = "user-name";
     nameSpan.textContent = `${user.nickname || "이름 없음"}${hostBadge}${meBadge}${connBadge}`;
 
-    const score = state.totalScores[user.uuid] ?? user.score ?? 0;
-    const scoreSpan = document.createElement("span");
-    scoreSpan.className = "user-score";
-    scoreSpan.textContent = `${formatScore(score)}점`;
+    li.append(nameSpan);
 
-    li.append(nameSpan, scoreSpan);
+    // 게임 대기실(IN_LOBBY)에서는 점수를 숨기고, 게임 플레이 중(IN_GAME) 및 결과 화면에서만 점수 표시
+    if (state.gameState !== "IN_LOBBY") {
+      const score = state.totalScores[user.uuid] ?? user.score ?? 0;
+      const scoreSpan = document.createElement("span");
+      scoreSpan.className = "user-score";
+      scoreSpan.textContent = `${formatScore(score)}점`;
+      li.append(scoreSpan);
+    }
+
     listEl.appendChild(li);
   });
 

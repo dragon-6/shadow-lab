@@ -2,7 +2,7 @@
 // masked.js - 3-2 ② 마스킹 영상 표시 (BROADCAST_MASKED_STREAM)
 // #maskedStreamList 안에 유저별 타일(이미지 + 닉네임)을 만들어 표시
 // ============================================================
-import { state } from "../core/state.js";
+import { state } from "../core/state.js?v=6";
 
 const tiles = new Map(); // uuid -> { wrap, img, label }
 

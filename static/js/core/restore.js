@@ -1,15 +1,15 @@
 // ============================================================
 // restore.js - 재접속 성공(RECONNECT_SUCCESS) 시 진행 중이던 게임 상태/화면 복구
 // ============================================================
-import { state } from "./state.js";
-import { showScreen, setText } from "../stages/screens.js";
-import { DEFAULT_WIDTH, DEFAULT_HEIGHT } from "../media/webcam.js";
-import { beginStreaming, stopStreaming, startCountdownUI, DEFAULT_FPS } from "../media/streaming.js";
-import { syncMaskedTiles } from "../media/masked.js";
-import { renderRoundInfo, PREPARE_COUNTDOWN_SEC } from "../stages/game.js";
-import { showRoundResult, cancelRoundEndAck } from "../stages/result.js";
-import { restoreGameOver } from "../stages/gameover.js";
-import { renderRoomUsers } from "../stages/lobby.js";
+import { state } from "./state.js?v=6";
+import { showScreen, setText } from "../stages/screens.js?v=6";
+import { DEFAULT_WIDTH, DEFAULT_HEIGHT } from "../media/webcam.js?v=6";
+import { beginStreaming, stopStreaming, startCountdownUI, DEFAULT_FPS } from "../media/streaming.js?v=6";
+import { syncMaskedTiles } from "../media/masked.js?v=6";
+import { renderRoundInfo, PREPARE_COUNTDOWN_SEC } from "../stages/game.js?v=6";
+import { showRoundResult, cancelRoundEndAck } from "../stages/result.js?v=6";
+import { restoreGameOver } from "../stages/gameover.js?v=6";
+import { renderRoomUsers } from "../stages/lobby.js?v=6";
 
 // 서버에서 전달하는 게임 상태 문자열 정규화
 function normalizeGameState(rawState, currentRound) {
