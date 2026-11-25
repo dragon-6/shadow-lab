@@ -1,10 +1,6 @@
 // ============================================================
 // gameover.js - 4. 게임 종료 단계 (GAME_OVER): 최종 순위 / 승리 표시
 // ============================================================
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> a1b9681b36005b68743e0e845402071d999e6be6
 import { state, nicknameOf, resetGameForReplay } from "../core/state.js?v=7";
 import { disableAutoReconnect, ensureConnected } from "../core/socket.js?v=7";
 import { stopStreaming } from "../media/streaming.js?v=7";
@@ -13,19 +9,6 @@ import { handleCheckWebcamReq } from "../media/webcam.js?v=7";
 import { renderRoomUsers, renderGameOptions, updateHostControls, requestSetNickname } from "./lobby.js?v=7";
 import { cancelRoundEndAck } from "./result.js?v=7";
 import { showScreen, setText, formatScore } from "./screens.js?v=7";
-<<<<<<< HEAD
-=======
-=======
-import { state, nicknameOf, resetGameForReplay } from "../core/state.js?v=6";
-import { disableAutoReconnect, ensureConnected } from "../core/socket.js?v=6";
-import { stopStreaming } from "../media/streaming.js?v=6";
-import { resetMaskedTiles } from "../media/masked.js?v=6";
-import { handleCheckWebcamReq } from "../media/webcam.js?v=6";
-import { renderRoomUsers, renderGameOptions, updateHostControls, requestSetNickname } from "./lobby.js?v=6";
-import { cancelRoundEndAck } from "./result.js?v=6";
-import { showScreen, setText, formatScore } from "./screens.js?v=6";
->>>>>>> da122f35b6280cf0ebd1721cbeedc983280daf6b
->>>>>>> a1b9681b36005b68743e0e845402071d999e6be6
 
 const RANK_TITLES = {
   1: "수석 그림자 연구원",
